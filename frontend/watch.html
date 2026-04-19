@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    <title>Watch — OnixPlay+</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --accent:      #39FF14;
+            --accent-glow: rgba(57,255,20,0.35);
+            --surface:     rgba(12,12,12,0.97);
+            --glass:       rgba(255,255,255,0.06);
+            --glass-b:     rgba(255,255,255,0.1);
+            --muted:       #8b9bb4;
+            --red:         #e50914;
+        }
+
+        html, body {
+            width:100%; height:100%; overflow:hidden;
+            background:#000; font-family:'Inter',sans-serif; color:#fff;
+        }
+
+        /* ── SHELL ───────────────────────────────────────── */
+        #player-shell {
+            position: fixed; inset: 0;
+            background: #000;
+        }
+
+        /* ── ACTUAL VIDEO ────────────────────────────────── */
+        #video-el {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            object-fit: cover; /* Fill Screen */
+            outline: none;
+            z-index: 1;
+        }
+        /* Hide native browser controls — our custom UI handles everything */
+        #video-el::-webkit-media-controls { display: none !important; }
+        #video-el::-webkit-media-controls-enclosure { display: none !important; }
+
+        /* ── OVERLAY (pointer passthrough except children) ─ */
+        #player-overlay {
+            position: absolute; inset: 0;
+            z-index: 10;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+        }
+        #player-overlay.ui-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #player-overlay.locked #top-bar,
+        #player-overlay.locked #bottom-bar,
+        #player-overlay.locked #center-controls { opacity:0; pointer-events:none; }
+        #player-overlay.locked #lock-btn { opacity:1 !important; pointer-events:all !important; }
+
+        /* ── TOP BAR ─────────────────────────────────────── */
+        #top-bar {
+            position: absolute; top:0; left:0; right:0;
+            padding: 20px 24px 70px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.88), transparent);
+            display: flex; justify-content:space-between; align-items:flex-start; gap:12px;
+            pointer-events: all;
+            transition: opacity 0.35s;
+        }
+        #back-btn {
+            display:flex; align-items:center; gap:10px;
+            color:#fff; text-decoration:none; font-size:.85rem; font-weight:600;
+            background:rgba(0,0,0,0.55); padding:10px 18px; border-radius:8px;
+            border:1px solid var(--glass-b); backdrop-filter:blur(14px);
+            transition:background .2s, transform .2s; white-space:nowrap;
+        }
+        #back-btn:hover { background:rgba(255,255,255,0.13); transform:scale(1.03); }
+        #back-title { max-width:220px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+
+        /* Quality badge (top-right) */
+        #quality-badge {
+            padding:7px 14px; border-radius:7px;
+            background:rgba(0,0,0,0.6); border:1px solid var(--glass-b);
+            backdrop-filter:blur(12px); font-size:.75rem; font-weight:800;
+            letter-spacing:1px; color:#ffd700;
+        }
+
+        /* ── CENTER CONTROLS ─────────────────────────────── */
+        #center-controls {
+            position: absolute; top:50%; left:50%;
+            transform: translate(-50%,-50%);
+            display: flex; align-items:center; gap:36px;
+            pointer-events: all;
+            transition: opacity 0.3s;
+        }
+        .c-btn {
+            width:58px; height:58px; border-radius:50%;
+            border:2px solid rgba(255,255,255,0.18);
+            background:rgba(0,0,0,0.5); backdrop-filter:blur(10px);
+            color:#fff; font-size:1.25rem;
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer; transition:transform .15s, background .2s, border-color .2s;
+            -webkit-tap-highlight-color:transparent;
+        }
+        .c-btn:hover { transform:scale(1.14); background:rgba(255,255,255,0.14); border-color:rgba(255,255,255,0.45); }
+        #play-pause-btn {
+            width:72px; height:72px; font-size:1.55rem; border-width:2.5px;
+            background:rgba(0,0,0,0.65);
+        }
+        #play-pause-btn:hover { border-color:var(--accent); box-shadow:0 0 22px var(--accent-glow); }
+
+        /* Buffering spinner inside play btn */
+        #buffering-ring {
+            display:none;
+            position:absolute;
+            width:72px; height:72px;
+            border:3px solid rgba(57,255,20,.2);
+            border-top:3px solid var(--accent);
+            border-radius:50%;
+            animation:spin .8s linear infinite;
+        }
+        #buffering-ring.show { display:block; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        /* Seek flash */
+        .seek-flash {
+            position:absolute; top:50%; transform:translateY(-50%);
+            width:80px; height:80px; border-radius:50%;
+            border:2px solid var(--accent);
+            background:rgba(57,255,20,.12);
+            display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+            pointer-events:none; opacity:0; z-index:20;
+        }
+        .seek-flash i  { font-size:1.6rem; color:var(--accent); }
+        .seek-flash span { font-size:.65rem; font-weight:800; color:var(--accent); }
+        .seek-flash.pop { animation:seekPop .5s ease forwards; }
+        @keyframes seekPop {
+            0% { opacity:0; transform:translateY(-50%) scale(.8); }
+            30%{ opacity:1; transform:translateY(-50%) scale(1.05); }
+            70%{ opacity:1; transform:translateY(-50%) scale(1); }
+            100%{ opacity:0; transform:translateY(-50%) scale(.9); }
+        }
+
+        /* ── LOCK BUTTON (always accessible) ─────────────── */
+        #lock-btn {
+            position:absolute; right:22px; top:50%; transform:translateY(-50%);
+            width:46px; height:46px; border-radius:50%;
+            border:1.5px solid var(--glass-b); background:rgba(0,0,0,0.6);
+            backdrop-filter:blur(10px); color:var(--muted);
+            display:flex; align-items:center; justify-content:center; font-size:1rem;
+            cursor:pointer; transition:all .3s; z-index:20; pointer-events:all;
+            -webkit-tap-highlight-color:transparent;
+        }
+        #lock-btn.locked { color:var(--accent); border-color:var(--accent); box-shadow:0 0 16px var(--accent-glow); }
+        #lock-btn:hover   { border-color:rgba(255,255,255,0.4); color:#fff; }
+
+        /* Lock hint */
+        #lock-hint {
+            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+            text-align:center; pointer-events:none; opacity:0; transition:opacity .3s;
+        }
+        #player-overlay.locked #lock-hint { opacity:1; }
+        #lock-hint i { font-size:2.4rem; color:var(--accent); margin-bottom:10px; display:block; }
+        #lock-hint p { font-size:.82rem; color:var(--muted); line-height:1.6; }
+
+        /* ── BOTTOM BAR ──────────────────────────────────── */
+        #bottom-bar {
+            position:absolute; bottom:0; left:0; right:0;
+            padding:80px 24px 22px;
+            background:linear-gradient(to top, rgba(0,0,0,.92), transparent);
+            display:flex; flex-direction:column; gap:14px;
+            pointer-events:all; transition:opacity .35s;
+        }
+
+        /* Seekbar */
+        #seekbar-wrap {
+            position:relative; width:100%; height:18px;
+            display:flex; align-items:center; cursor:pointer;
+            pointer-events:all;
+        }
+        #seekbar-track {
+            width:100%; height:4px; background:rgba(255,255,255,0.15);
+            border-radius:4px; position:relative; overflow:hidden;
+            transition:height .15s;
+        }
+        #seekbar-wrap:hover #seekbar-track { height:6px; }
+        #seekbar-buffered {
+            position:absolute; height:100%; left:0; width:0%;
+            background:rgba(255,255,255,0.25); border-radius:4px;
+        }
+        #seekbar-fill {
+            position:absolute; height:100%; left:0; width:0%;
+            background:linear-gradient(90deg, var(--accent), #22ff00);
+            border-radius:4px; transition:width .1s linear;
+        }
+        #seekbar-thumb {
+            position:absolute; top:50%; transform:translate(-50%,-50%);
+            width:14px; height:14px; border-radius:50%;
+            background:#fff; box-shadow:0 0 8px rgba(0,0,0,.8);
+            left:0%; opacity:0; transition:opacity .2s, width .2s, height .2s;
+        }
+        #seekbar-wrap:hover #seekbar-thumb { opacity:1; width:16px; height:16px; }
+
+        /* Thumbnail preview */
+        #thumb-preview {
+            position:absolute; bottom:28px;
+            display:flex; flex-direction:column; align-items:center; gap:5px;
+            transform:translateX(-50%); pointer-events:none; display:none;
+        }
+        #thumb-preview.show { display:flex; }
+        #thumb-img {
+            width:160px; height:90px; object-fit:cover;
+            border-radius:6px; border:2px solid rgba(255,255,255,0.2);
+            box-shadow:0 8px 30px rgba(0,0,0,.8);
+        }
+        #thumb-time {
+            font-size:.72rem; font-weight:700;
+            background:rgba(0,0,0,.82); padding:3px 10px; border-radius:4px;
+            border:1px solid var(--glass-b);
+        }
+
+        /* Time display */
+        #time-display {
+            font-size:.78rem; font-weight:600; color:var(--muted);
+            white-space:nowrap;
+        }
+        #time-display .current { color:#fff; }
+
+        /* Row labels */
+        .row-label {
+            font-size:.68rem; letter-spacing:1.8px; text-transform:uppercase;
+            color:var(--muted); white-space:nowrap;
+        }
+        .pill-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+        /* Pills (language / audio track) */
+        .pill {
+            display:flex; align-items:center; gap:6px;
+            padding:6px 14px; border-radius:7px;
+            font-size:.77rem; font-weight:600; cursor:pointer;
+            border:1px solid var(--glass-b); background:var(--glass); color:var(--muted);
+            transition:all .2s; -webkit-tap-highlight-color:transparent;
+        }
+        .pill:hover { border-color:rgba(255,255,255,.35); color:#fff; }
+        .pill.active { border-color:var(--accent); background:rgba(57,255,20,.12); color:#fff; box-shadow:0 0 10px var(--accent-glow); }
+        .pill .badge { font-size:.58rem; opacity:.65; background:rgba(255,255,255,.1); padding:1px 5px; border-radius:3px; }
+
+        /* Quality pills */
+        .q-pill {
+            padding:5px 12px; border-radius:7px; font-size:.77rem; font-weight:700;
+            cursor:pointer; border:1px solid var(--glass-b); background:var(--glass); color:var(--muted);
+            transition:all .2s; position:relative; -webkit-tap-highlight-color:transparent;
+        }
+        .q-pill:hover { border-color:rgba(255,255,255,.35); color:#fff; }
+        .q-pill.active { border-color:#fff; background:rgba(255,255,255,.1); color:#fff; }
+        .q-pill.selected { border-color:var(--accent); background:rgba(57,255,20,.12); color:#fff; box-shadow:0 0 10px var(--accent-glow); }
+        .q-pill::after { content:attr(data-tag); font-size:.5rem; font-weight:800; position:absolute; top:-6px; right:-4px; background:var(--surface); padding:1px 4px; border-radius:3px; }
+        .q-pill[data-tag="4K"]::after { color:#ffd700; }
+        .q-pill[data-tag="HD"]::after { color:var(--accent); }
+
+        /* Controls row */
+        #ctrl-row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+        .ctrl-left, .ctrl-right { display:flex; align-items:center; gap:8px; }
+        .ctrl-btn {
+            width:42px; height:42px; border-radius:8px;
+            border:1px solid var(--glass-b); background:var(--glass); color:#fff;
+            display:flex; align-items:center; justify-content:center; font-size:.95rem;
+            cursor:pointer; backdrop-filter:blur(8px); transition:all .2s;
+            -webkit-tap-highlight-color:transparent;
+        }
+        .ctrl-btn:hover { background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.3); transform:scale(1.05); }
+        .ctrl-btn.active { border-color:var(--accent); color:var(--accent); box-shadow:0 0 10px var(--accent-glow); }
+        .ctrl-vol { display:flex; align-items:center; gap:6px; }
+        #volume-range {
+            -webkit-appearance:none; appearance:none;
+            width:80px; height:4px; border-radius:4px; outline:none;
+            background:rgba(255,255,255,.2); cursor:pointer;
+        }
+        #volume-range::-webkit-slider-thumb {
+            -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+            background:var(--accent); cursor:pointer; box-shadow:0 0 6px var(--accent-glow);
+        }
+
+        /* ── LOADING OVERLAY ─────────────────────────────── */
+        #loading-overlay {
+            position:absolute; inset:0; z-index:50;
+            background:#000; display:flex; flex-direction:column;
+            align-items:center; justify-content:center; gap:0;
+        }
+        #loading-backdrop {
+            position:absolute; inset:0;
+            background-size:cover; background-position:center;
+            filter:blur(25px) brightness(.3) saturate(0.8);
+            transform:scale(1.1);
+        }
+        .loading-inner {
+            position:relative; z-index:2;
+            display:flex; flex-direction:column; align-items:center; gap:24px;
+            text-align:center; padding:0 20px;
+        }
+        .load-logo {
+            font-size:1.6rem; font-weight:900; letter-spacing:3px;
+            background:linear-gradient(135deg,var(--accent),#22d400);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+        }
+        .ring-loader {
+            width:54px; height:54px;
+            border:3px solid rgba(57,255,20,.18);
+            border-top:3px solid var(--accent);
+            border-radius:50%; animation:spin .85s linear infinite;
+        }
+        .load-steps { display:flex; flex-direction:column; gap:10px; min-width:260px; }
+        .load-step {
+            display:flex; align-items:center; gap:12px;
+            font-size:.82rem; color:var(--muted); padding:8px 14px;
+            background:rgba(255,255,255,.04); border-radius:8px;
+            border:1px solid var(--glass-b); transition:all .4s;
+        }
+        .load-step.done  { color:#fff;         border-color:var(--accent); background:rgba(57,255,20,.07); }
+        .load-step.error { color:#ff6b6b;       border-color:#ff6b6b;       background:rgba(255,107,107,.07); }
+        .load-step i { width:18px; text-align:center; }
+        .step-text { flex:1; text-align:left; }
+
+        /* ── ERROR OVERLAY ───────────────────────────────── */
+        #error-overlay {
+            position:absolute; inset:0; z-index:60;
+            background:rgba(0,0,0,.94);
+            display:none; flex-direction:column; align-items:center; justify-content:center;
+            gap:20px; text-align:center; padding:24px;
+        }
+        #error-overlay i   { font-size:3rem; color:#ff6b6b; }
+        #error-overlay h2  { font-size:1.3rem; font-weight:800; }
+        #error-overlay p   { font-size:.85rem; color:var(--muted); max-width:400px; line-height:1.6; }
+        .err-actions { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
+        .err-btn {
+            padding:10px 24px; border-radius:8px; border:none; cursor:pointer;
+            font-size:.85rem; font-weight:700; font-family:'Inter',sans-serif;
+            transition:all .2s;
+        }
+        .err-btn.primary { background:var(--accent); color:#000; }
+        .err-btn.primary:hover { background:#fff; }
+        .err-btn.secondary { background:rgba(255,255,255,.1); color:#fff; border:1px solid var(--glass-b); }
+        .err-btn.secondary:hover { background:rgba(255,255,255,.18); }
+
+        /* ── TOAST ───────────────────────────────────────── */
+        #onix-toast {
+            position:fixed; bottom:55px; left:50%;
+            transform:translateX(-50%) translateY(16px);
+            background:rgba(10,10,10,.93); color:#fff;
+            padding:11px 22px; border-radius:10px; font-size:.82rem; font-weight:500;
+            z-index:9999; border:1px solid var(--glass-b); backdrop-filter:blur(16px);
+            box-shadow:0 10px 40px rgba(0,0,0,.6); pointer-events:none;
+            opacity:0; transition:opacity .3s, transform .3s;
+            white-space:nowrap; max-width:90vw; text-align:center;
+        }
+        #onix-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+        /* ── SETTINGS MODAL (quality/subtitle) ───────────── */
+        #settings-modal {
+            position:absolute; bottom:90px; right:24px; z-index:100;
+            background:rgba(8,8,8,.96); border:1px solid var(--glass-b);
+            border-radius:14px; padding:18px; display:none; flex-direction:column; gap:14px;
+            min-width:240px; box-shadow:0 16px 50px rgba(0,0,0,.8);
+            backdrop-filter:blur(24px); pointer-events:all;
+        }
+        #settings-modal.open { display:flex; animation:slideUp .25s ease; }
+        @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        .setting-section h4 { font-size:.72rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+        .setting-row {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:7px 0; font-size:.82rem; color:#ccc; cursor:pointer; border-radius:6px;
+        }
+        .setting-row:hover { color:#fff; }
+
+        /* ── MOBILE ──────────────────────────────────────── */
+        @media(max-width:600px) {
+            #top-bar { padding:14px 16px 50px; }
+            #back-title { display:none; }
+            #bottom-bar { padding:60px 16px 18px; gap:10px; }
+            .row-label { display:none; }
+            .pill { padding:5px 11px; font-size:.72rem; }
+            .q-pill { padding:4px 10px; font-size:.72rem; }
+            .ctrl-btn { width:38px; height:38px; font-size:.88rem; }
+            #volume-range { width:55px; }
+            #lock-btn { right:14px; width:40px; height:40px; }
+            .c-btn { width:50px; height:50px; font-size:1.1rem; }
+            #play-pause-btn { width:62px; height:62px; font-size:1.3rem; }
+            #quality-badge { display:none; }
+        }
+    </style>
+</head>
+<body>
+<div id="player-shell">
+
+    <!-- ══ ACTUAL VIDEO ELEMENT ══════════════════════════════════════════════ -->
+    <video id="video-el" preload="auto" playsinline></video>
+
+    <!-- ══ LOADING OVERLAY ═══════════════════════════════════════════════════ -->
+    <div id="loading-overlay">
+        <div id="loading-backdrop"></div>
+        <div class="loading-inner">
+            <div class="load-logo">OnixPlay+</div>
+            <div class="ring-loader"></div>
+            <div class="load-steps" id="load-steps">
+                <div class="load-step" id="step-search">
+                    <i class="fa fa-search"></i>
+                    <span class="step-text">Searching for best quality...</span>
+                </div>
+                <div class="load-step" id="step-torrent">
+                    <i class="fa fa-magnet"></i>
+                    <span class="step-text">Locating dual audio release...</span>
+                </div>
+                <div class="load-step" id="step-debrid">
+                    <i class="fa fa-bolt"></i>
+                    <span class="step-text">Connecting to AllDebrid...</span>
+                </div>
+                <div class="load-step" id="step-ready">
+                    <i class="fa fa-play-circle"></i>
+                    <span class="step-text">Preparing stream...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ ERROR OVERLAY ═════════════════════════════════════════════════════ -->
+    <div id="error-overlay">
+        <i class="fa fa-circle-xmark"></i>
+        <h2 id="err-title">Stream Unavailable</h2>
+        <p id="err-msg">Could not find a stream for this title.</p>
+        <div class="err-actions">
+            <button class="err-btn primary" id="err-retry">
+                <i class="fa fa-rotate-right"></i>&nbsp; Retry
+            </button>
+            <button class="err-btn secondary" id="err-try1080" style="display:none">
+                <i class="fa fa-film"></i>&nbsp; Try 1080p
+            </button>
+            <button class="err-btn secondary" onclick="history.back()">
+                <i class="fa fa-arrow-left"></i>&nbsp; Go Back
+            </button>
+        </div>
+        <p style="font-size:.72rem;color:#555;margin-top:12px;">
+            Make sure the streaming backend is running:<br>
+            <code style="color:var(--accent)">cd backend &amp;&amp; npm start</code>
+        </p>
+    </div>
+
+    <!-- ══ PLAYER OVERLAY ════════════════════════════════════════════════════ -->
+    <div id="player-overlay">
+
+        <!-- TOP BAR -->
+        <div id="top-bar">
+            <a id="back-btn" href="javascript:history.back()">
+                <i class="fa fa-arrow-left"></i>
+                <span id="back-title">Back</span>
+            </a>
+            <div id="quality-badge">1080p HD</div>
+        </div>
+
+        <!-- CENTER CONTROLS -->
+        <div id="center-controls">
+            <button class="c-btn" id="rewind-btn">
+                <i class="fa fa-rotate-left"></i>
+            </button>
+            <button class="c-btn" id="play-pause-btn" style="position:relative;">
+                <div id="buffering-ring"></div>
+                <i class="fa fa-play" id="play-icon"></i>
+            </button>
+            <button class="c-btn" id="forward-btn">
+                <i class="fa fa-rotate-right"></i>
+            </button>
+        </div>
+
+        <!-- Seek flash indicators -->
+        <div class="seek-flash" id="rw-flash" style="left:22%;">
+            <i class="fa fa-backward"></i><span>-10s</span>
+        </div>
+        <div class="seek-flash" id="fw-flash" style="left:78%;">
+            <i class="fa fa-forward"></i><span>+10s</span>
+        </div>
+
+        <!-- LOCK BUTTON -->
+        <button id="lock-btn"><i class="fa fa-lock-open" id="lock-icon"></i></button>
+
+        <!-- LOCK HINT -->
+        <div id="lock-hint">
+            <i class="fa fa-lock"></i>
+            <p>Screen Locked<br><small>Tap the lock icon to unlock</small></p>
+        </div>
+
+        <!-- SETTINGS MODAL -->
+        <div id="settings-modal">
+            <div class="setting-section">
+                <h4>Subtitles</h4>
+                <div class="setting-row" id="sub-off" onclick="setSub(null)">
+                    <span>Off</span><i class="fa fa-check" style="color:var(--accent);font-size:.8rem;"></i>
+                </div>
+                <div id="sub-tracks"></div>
+            </div>
+        </div>
+
+        <!-- BOTTOM BAR -->
+        <div id="bottom-bar">
+
+            <!-- Thumbnail preview -->
+            <div id="thumb-preview">
+                <img id="thumb-img" src="" alt="">
+                <div id="thumb-time">0:00</div>
+            </div>
+
+            <!-- Seekbar -->
+            <div id="seekbar-wrap">
+                <div id="seekbar-track">
+                    <div id="seekbar-buffered"></div>
+                    <div id="seekbar-fill"></div>
+                </div>
+                <div id="seekbar-thumb"></div>
+            </div>
+
+            <!-- Time + Audio Tracks -->
+            <div class="pill-row">
+                <span class="row-label">Audio</span>
+                <div class="pill-group" id="audio-pills"></div>
+                <span id="time-display" style="margin-left:auto;">
+                    <span class="current" id="time-current">0:00</span>
+                    <span style="color:#444;margin:0 4px;">/</span>
+                    <span id="time-total">0:00</span>
+                </span>
+            </div>
+
+            <!-- Quality row -->
+            <div class="pill-row" id="quality-row">
+                <span class="row-label">Quality</span>
+                <div class="pill-group" id="quality-pills"></div>
+                <button id="hls-toggle-btn" class="pill" onclick="toggleHlsMode()" style="margin-left:12px;border-color:rgba(229,9,20,0.4);">
+                    <i class="fa fa-gauge"></i> HLS MODE: OFF
+                </button>
+            </div>
+
+            <!-- Controls row -->
+            <div id="ctrl-row">
+                <div class="ctrl-left">
+                    <div class="ctrl-vol">
+                        <button class="ctrl-btn" id="mute-btn" title="Mute">
+                            <i class="fa fa-volume-high" id="vol-icon"></i>
+                        </button>
+                        <input type="range" id="volume-range" min="0" max="100" value="100" title="Volume">
+                    </div>
+                </div>
+                <div class="ctrl-right">
+                    <button class="ctrl-btn" id="sub-btn" title="Subtitles">
+                        <i class="fa fa-closed-captioning"></i>
+                    </button>
+                    <button class="ctrl-btn" id="pip-btn" title="Picture-in-Picture">
+                        <i class="fa fa-clone"></i>
+                    </button>
+                    <button class="ctrl-btn" id="lock-ctrl-btn" title="Screen Lock">
+                        <i class="fa fa-lock-open" id="lock-ctrl-icon"></i>
+                    </button>
+                    <button class="ctrl-btn" id="fullscreen-btn" title="Fullscreen">
+                        <i class="fa fa-expand" id="fs-icon"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div><!-- /bottom-bar -->
+    </div><!-- /player-overlay -->
+
+</div><!-- /player-shell -->
+
+<div id="onix-toast"></div>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   OnixPlay+ Premium Player — Streaming Engine v2.0
+   * No iframes. Real-Debrid → direct HTTP stream → native <video>
+   * Native audioTracks API for multi-audio (.mkv dual audio support)
+   * Real seekbar, real events, real time display
+═══════════════════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', async () => {
+
+/* ── CONFIG ────────────────────────────────────────────────────────────── */
+const SUPABASE_URL = 'https://qlvpdukltvmenbfqkaxu.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_qKZ9yLXawfesBidq_CHN3w_DRKGe6xN';
+const TMDB_KEY     = 'd0c153faeb709eb8deffeece3081d375';
+const TMDB_BASE    = 'https://api.themoviedb.org/3';
+
+// Backend streaming API URL (users configure this once)
+const BACKEND_URL  = localStorage.getItem('onix_backend_url') || 'http://localhost:3001';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ── AUTH GUARD ────────────────────────────────────────────────────────── */
+const session = JSON.parse(localStorage.getItem('pirate_session'));
+if (!session) { window.location.href = 'auth.html'; return; }
+
+/* ── URL PARAMS ────────────────────────────────────────────────────────── */
+const params    = new URLSearchParams(window.location.search);
+const movieId   = params.get('id');
+const mediaType = params.get('type')   || 'movie';
+const season    = params.get('s')      || '1';
+const episode   = params.get('e')      || '1';
+let isHlsActive = false; // "Netflix Mode" toggle state
+
+/* ── DEVICE DETECTION ──────────────────────────────────────────────────── */
+const isMobile  = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+const isTV      = window.innerWidth >= 1920 || /TV|SmartTV|WebOS|Tizen/i.test(navigator.userAgent);
+const defaultQ  = 'auto'; // Prevent buffering down to 5Mbps connections by mapping real speed on load
+
+/* ── QUALITY CONFIG ────────────────────────────────────────────────────── */
+const ALL_QUALITIES = [
+    { key:'auto',  label:'Auto',    tag:'',   desc:'Best available'  },
+    { key:'4k',    label:'4K UHD',  tag:'4K', desc:'Ultra HD'        },
+    { key:'1080p', label:'1080p',   tag:'HD', desc:'Full HD'         },
+    { key:'720p',  label:'720p',    tag:'HD', desc:'HD Ready'        },
+    { key:'480p',  label:'480p',    tag:'',   desc:'Standard'        },
+    { key:'360p',  label:'360p',    tag:'',   desc:'Low bandwidth'   },
+];
+// Restrict 4K to desktop/TV only
+const QUALITIES = isMobile ? ALL_QUALITIES.filter(q => q.key !== '4k') : ALL_QUALITIES;
+
+/* ── DOM REFS ──────────────────────────────────────────────────────────── */
+const video         = document.getElementById('video-el');
+const overlay       = document.getElementById('player-overlay');
+const loadingEl     = document.getElementById('loading-overlay');
+const loadBackdrop  = document.getElementById('loading-backdrop');
+const errorEl       = document.getElementById('error-overlay');
+const backTitle     = document.getElementById('back-title');
+const qualityBadge  = document.getElementById('quality-badge');
+const playIcon      = document.getElementById('play-icon');
+const bufferingRing = document.getElementById('buffering-ring');
+const lockBtn       = document.getElementById('lock-btn');
+const lockIcon      = document.getElementById('lock-icon');
+const lockCtrlBtn   = document.getElementById('lock-ctrl-btn');
+const lockCtrlIcon  = document.getElementById('lock-ctrl-icon');
+const fsIcon        = document.getElementById('fs-icon');
+const seekbarWrap   = document.getElementById('seekbar-wrap');
+const seekFill      = document.getElementById('seekbar-fill');
+const seekBuffered  = document.getElementById('seekbar-buffered');
+const seekThumb     = document.getElementById('seekbar-thumb');
+const timeCurrent   = document.getElementById('time-current');
+const timeTotal     = document.getElementById('time-total');
+const audioPills    = document.getElementById('audio-pills');
+const qualityPills  = document.getElementById('quality-pills');
+const thumbPreview  = document.getElementById('thumb-preview');
+const thumbImg      = document.getElementById('thumb-img');
+const thumbTime     = document.getElementById('thumb-time');
+const volRange      = document.getElementById('volume-range');
+const volIcon       = document.getElementById('vol-icon');
+const settingsModal = document.getElementById('settings-modal');
+
+/* ── STATE ─────────────────────────────────────────────────────────────── */
+let isLocked       = false;
+let uiVisible      = true;
+let hideTimer      = null;
+let isSeeking      = false;
+let currentQuality = defaultQ;
+let backdropPath   = '';
+let movieTitle     = 'Watch';
+let streamUrl      = '';
+let activeLang     = 'hindi'; // Global state for language tracking
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════════════════ */
+function toast(msg, dur = 3200) {
+    const el = document.getElementById('onix-toast');
+    el.innerHTML = msg;
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LOAD STEPS UI
+═══════════════════════════════════════════════════════════════════════ */
+const steps = ['step-search','step-torrent','step-debrid','step-ready'];
+let currentStep = -1;
+
+function advanceStep(text, isError = false) {
+    currentStep++;
+    const el = document.getElementById(steps[currentStep]);
+    if (!el) return;
+    el.classList.remove('done','error');
+    if (text) el.querySelector('.step-text').textContent = text;
+    el.classList.add(isError ? 'error' : 'done');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LOADING / ERROR UI
+═══════════════════════════════════════════════════════════════════════ */
+function showLoading() {
+    loadingEl.style.display = 'flex';
+    errorEl.style.display  = 'none';
+    currentStep = -1;
+    steps.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.classList.remove('done','error'); }
+    });
+}
+function hideLoading() {
+    loadingEl.style.transition = 'opacity .5s';
+    loadingEl.style.opacity    = '0';
+    setTimeout(() => { loadingEl.style.display = 'none'; loadingEl.style.opacity = '1'; }, 500);
+}
+function showError(title, msg, show1080 = false) {
+    loadingEl.style.display  = 'none';
+    errorEl.style.display    = 'flex';
+    document.getElementById('err-title').textContent = title;
+    document.getElementById('err-msg').textContent   = msg;
+    document.getElementById('err-try1080').style.display = show1080 ? 'inline-flex' : 'none';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TMDB METADATA
+═══════════════════════════════════════════════════════════════════════ */
+async function loadMetadata() {
+    try {
+        const r = await fetch(`${TMDB_BASE}/${mediaType}/${movieId}?api_key=${TMDB_KEY}`);
+        const d = await r.json();
+        movieTitle   = d.title || d.name || 'Watch';
+        backdropPath = d.backdrop_path || d.poster_path || '';
+        const label  = mediaType === 'tv' ? `${movieTitle} · S${season}E${episode}` : movieTitle;
+        backTitle.textContent  = label;
+        document.title         = `${label} — OnixPlay+`;
+        if (backdropPath) {
+            const bigUrl = `https://image.tmdb.org/t/p/original${backdropPath}`;
+            const smUrl  = `https://image.tmdb.org/t/p/w400${backdropPath}`;
+            loadBackdrop.style.backgroundImage = `url('${bigUrl}')`;
+            thumbImg.src = smUrl;
+        }
+    } catch (e) {
+        backTitle.textContent = 'Watch';
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   STREAMING API CALL
+═══════════════════════════════════════════════════════════════════════ */
+/* ── HLS TOGGLE ────────────────────────────────────────────────────────── */
+function toggleHlsMode() {
+    isHlsActive = !isHlsActive;
+    const btn = document.getElementById('hls-toggle-btn');
+    if (isHlsActive) {
+        btn.classList.add('active');
+        btn.innerHTML = '<i class="fa fa-gauge-high"></i> HLS MODE: ON';
+        toast('Netflix HLS Mode Enabled: Optimized for slow internet & Multi-Audio.');
+    } else {
+        btn.classList.remove('active');
+        btn.innerHTML = '<i class="fa fa-gauge"></i> HLS MODE: OFF';
+        toast('Standard Direct Mode selected.');
+    }
+}
+
+async function fetchStream(quality = currentQuality, lang = 'hindi') {
+    showLoading();
+    await loadMetadata();
+    
+    // Adapt to network speed (5Mbps handler)
+    let targetQ = quality;
+    if (quality === 'auto') {
+        const speed = navigator.connection ? navigator.connection.downlink : 10;
+        if (speed <= 4.0) targetQ = '480p';
+        else if (speed <= 10.0) targetQ = '720p';
+        else targetQ = '1080p';
+        toast(`Auto Selected: <b>${targetQ}</b> (net speed ~${speed} Mbps)`);
+    }
+
+    try {
+        // Step 1
+        setTimeout(() => advanceStep(`Searching: "${movieTitle}" ${targetQ.toUpperCase()} ${lang}`), 300);
+
+        const apiUrl = `${BACKEND_URL}/api/stream?` + new URLSearchParams({
+            title:    movieTitle,
+            imdbId:   (window._imdbId || ''),
+            type:     mediaType === 'anime' ? 'anime' : mediaType,
+            quality:  targetQ,
+            lang,
+            season,
+            episode,
+            userRole: (session?.is_subscribed ? 'premium' : 'free'),
+            userId:   (session?.user_id || ''),
+        });
+
+        // Step 2
+        setTimeout(() => advanceStep('Locating dual audio release...'), 1200);
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 180000); // 3 min timeout
+
+        const res = await fetch(apiUrl, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+            const msg = data.error || 'Unknown error';
+            advanceStep(`Error: ${msg}`, true);
+            showError(
+                'Stream Unavailable',
+                msg + (data.hint ? `\n\n${data.hint}` : ''),
+                quality !== '1080p'
+            );
+            return;
+        }
+
+        // Step 3
+        advanceStep('AllDebrid link secured ✓');
+        // Step 4
+        setTimeout(() => advanceStep('Starting playback...'), 400);
+
+        streamUrl = data.url;
+        currentQuality = data.quality || quality;
+
+        setQualityBadge(currentQuality);
+        
+        const isInstant = !!data.cached || !!data.fallback_lang || data.torrent_name?.toLowerCase().includes('cached');
+        const instantBadge = data.fallback_lang ? '' : (isInstant ? '<span style="color:#00ff00;font-weight:bold;">[INSTANT PLAY]</span> ' : '');
+
+        // --- HLS TRANSCODING INTEGRATION (The "Netflix-Level" engine) ---
+        if (isHlsActive) {
+            advanceStep('Engine: Transcoding to HLS chunks...');
+            toast('Generating HLS Playlist... Please wait 8-10s');
+            
+            try {
+                const hlsRes = await fetch(`${BACKEND_URL}/api/stream/hls?videoUrl=${encodeURIComponent(streamUrl)}&quality=${quality}`);
+                const hlsData = await hlsRes.json();
+                
+                if (hlsData.playlist) {
+                    const hlsPlaylistUrl = `${BACKEND_URL}${hlsData.playlist}`;
+                    console.log("[HLS] Serving playlist:", hlsPlaylistUrl);
+                    
+                    if (Hls.isSupported()) {
+                        const hls = new Hls({
+                            maxBufferLength: 10,       // Keep buffer short for slow nets
+                            maxMaxBufferLength: 20,
+                            enableWorker: true,
+                            startLevel: -1,             // Auto quality
+                            fragLoadingMaxRetry: 5,
+                            manifestLoadingMaxRetry: 5,
+                        });
+                        hls.loadSource(hlsPlaylistUrl);
+                        hls.attachMedia(video);
+                        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                            video.play();
+                            hideLoading();
+                        });
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        // Native Safari HLS support
+                        video.src = hlsPlaylistUrl;
+                        video.addEventListener('loadedmetadata', () => {
+                            video.play();
+                            hideLoading();
+                        });
+                    }
+                    advanceStep('HLS Streaming Ready ✓');
+                    return; // Stop here, we are using HLS instead of direct src
+                }
+            } catch (hlsErr) {
+                console.error("[HLS] Failed to transcode, falling back to direct:", hlsErr);
+                toast('HLS Engine failed. Falling back to Direct mode.');
+            }
+        }
+        
+        // Handle Lang Fallback (Direct Mode)
+        if (data.fallback_lang && lang !== 'english' && lang !== 'en') {
+            toast(`<i class="fa fa-language" style="color:#ffcc00"></i>&nbsp; ${lang} not found. Playing default English stream.`, 4000);
+            
+            // Switch active pill to English UI
+            setTimeout(() => {
+                document.querySelectorAll('#audio-pills .pill').forEach(p => {
+                    p.classList.remove('active');
+                    if(p.textContent.includes('English') || p.textContent.includes('en')) {
+                        p.classList.add('active');
+                    }
+                });
+            }, 800);
+        } else {
+            toast(`<i class="fa fa-bolt" style="color:var(--accent)"></i>&nbsp; ${instantBadge}Stream ready — <b>${currentQuality.toUpperCase()}</b> · ${data.torrent_name?.substring(0, 40)}...`);
+        }
+
+        video.src = streamUrl;
+        video.load();
+        video.play().catch(() => {}); // Autoplay may require gesture
+
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            showError('Timeout', 'The stream took too long to prepare. Please try again.', true);
+        } else {
+            showError('Connection Error', `Could not reach the streaming backend at ${BACKEND_URL}.\n\nMake sure it is running: npm start`, false);
+        }
+        console.error('[OnixPlay+] Stream error:', err);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VIDEO ELEMENT EVENTS
+═══════════════════════════════════════════════════════════════════════ */
+video.addEventListener('canplay', () => {
+    hideLoading();
+    buildAudioTrackPills();
+});
+
+video.addEventListener('play', () => {
+    playIcon.className     = 'fa fa-pause';
+    bufferingRing.classList.remove('show');
+    // Rotate to landscape automatically
+    if (isMobile && screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(e => console.log('Orientation lock unavailable:', e));
+    }
+});
+video.addEventListener('pause', () => {
+    playIcon.className = 'fa fa-play';
+});
+video.addEventListener('waiting', () => {
+    bufferingRing.classList.add('show');
+    playIcon.className = '';
+});
+video.addEventListener('playing', () => {
+    bufferingRing.classList.remove('show');
+    playIcon.className = 'fa fa-pause';
+});
+video.addEventListener('ended', () => {
+    playIcon.className = 'fa fa-rotate-right';
+    overlay.classList.remove('ui-hidden');
+});
+video.addEventListener('error', (e) => {
+    const codes = {1:'Aborted',2:'Network error',3:'Decode error',4:'Format unsupported'};
+    const msg = codes[video.error?.code] || 'Unknown playback error';
+    showError('Playback Error', `${msg}. The stream may have expired — please retry.`);
+});
+
+/* Real seekbar ─────────────────────────────────────────────────────── */
+video.addEventListener('timeupdate', () => {
+    if (isSeeking || !video.duration) return;
+    const pct = (video.currentTime / video.duration) * 100;
+    seekFill.style.width  = pct + '%';
+    seekThumb.style.left  = pct + '%';
+    timeCurrent.textContent = formatTime(video.currentTime);
+});
+
+video.addEventListener('durationchange', () => {
+    timeTotal.textContent = formatTime(video.duration);
+});
+
+video.addEventListener('progress', () => {
+    if (!video.duration || !video.buffered.length) return;
+    const pct = (video.buffered.end(video.buffered.length - 1) / video.duration) * 100;
+    seekBuffered.style.width = pct + '%';
+});
+
+video.addEventListener('volumechange', () => {
+    volRange.value = Math.round(video.volume * 100);
+    volIcon.className = video.muted || video.volume === 0
+        ? 'fa fa-volume-xmark'
+        : video.volume < 0.5 ? 'fa fa-volume-low' : 'fa fa-volume-high';
+});
+
+/* Seekbar pointer events ──────────────────────────────────────────── */
+function seekTo(e) {
+    if (!video.duration) return;
+    const rect = seekbarWrap.getBoundingClientRect();
+    const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    video.currentTime = pct * video.duration;
+    seekFill.style.width = (pct * 100) + '%';
+    seekThumb.style.left = (pct * 100) + '%';
+}
+
+seekbarWrap.addEventListener('mousedown', (e) => { isSeeking = true; seekTo(e); });
+document.addEventListener('mousemove', (e) => { if (isSeeking) seekTo(e); });
+document.addEventListener('mouseup',   ()  => { isSeeking = false; });
+
+// Touch seek
+seekbarWrap.addEventListener('touchstart', (e) => { isSeeking = true; seekTo(e.touches[0]); }, { passive:true });
+seekbarWrap.addEventListener('touchmove',  (e) => { if (isSeeking) seekTo(e.touches[0]); }, { passive:true });
+seekbarWrap.addEventListener('touchend',   ()  => { isSeeking = false; });
+
+// Thumbnail preview on hover
+seekbarWrap.addEventListener('mousemove', (e) => {
+    if (!video.duration) return;
+    const rect = seekbarWrap.getBoundingClientRect();
+    const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const sec  = pct * video.duration;
+    thumbTime.textContent = formatTime(sec);
+    thumbPreview.style.left = e.clientX + 'px';
+    thumbPreview.classList.add('show');
+});
+seekbarWrap.addEventListener('mouseleave', () => thumbPreview.classList.remove('show'));
+
+/* ═══════════════════════════════════════════════════════════════════════
+   AUDIO TRACKS (TMDB FETCH)
+═══════════════════════════════════════════════════════════════════════ */
+async function buildAudioTrackPills() {
+    if (audioPills.children.length > 0) return; // Only build once
+    audioPills.innerHTML = '<span style="font-size:0.75rem;color:var(--muted)">Loading...</span>';
+    
+    try {
+        const res = await fetch(`${TMDB_BASE}/${mediaType}/${movieId}?api_key=${TMDB_KEY}`);
+        const data = await res.json();
+        
+        let spoken = data.spoken_languages || [];
+        const langs = [];
+        spoken.forEach(s => langs.push({ code: (s.english_name||'').toLowerCase(), label: s.english_name || s.name }));
+        
+        // Ensure standard UI fallbacks
+        if (!langs.find(l => l.code.includes('english'))) langs.push({ code: 'en', label: 'English' });
+        if (!langs.find(l => l.code.includes('hindi'))) langs.push({ code: 'hindi', label: 'Hindi' });
+        
+        audioPills.innerHTML = '';
+        langs.forEach((lg, i) => {
+            if (!lg.code) return;
+            const btn = document.createElement('button');
+            const isHindiPref = lg.code.includes('hin');
+            // If it's a known preferred language, we can select it (or default to whichever current fetchStream used)
+            btn.className = `pill`;
+            if (isHindiPref) btn.classList.add('active'); // Defaults
+            
+            let flag = '';
+            if (isHindiPref) flag = '🇮🇳 ';
+            else if (lg.code.includes('en')) flag = '🇺🇸 ';
+            else if (lg.code.includes('ja')) flag = '🇯🇵 ';
+            else if (lg.code.includes('ko')) flag = '🇰🇷 ';
+            else if (lg.code.includes('ta')) flag = '🎬 '; // Tamil
+
+            btn.innerHTML  = `<span>${flag}</span>${lg.label}`;
+            
+            btn.onclick = () => {
+                document.querySelectorAll('#audio-pills .pill').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                toast(`Switching to ${lg.label} remote stream...`);
+                activeLang = lg.code.includes('en') ? 'english' : lg.code;
+                fetchStream(currentQuality, activeLang);
+            };
+            audioPills.appendChild(btn);
+        });
+        
+    } catch(err) {
+        audioPills.innerHTML = ''; // Silently fail UI block
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   QUALITY SWITCHER
+═══════════════════════════════════════════════════════════════════════ */
+function buildQualityPills() {
+    qualityPills.innerHTML = '';
+    QUALITIES.forEach(q => {
+        const btn = document.createElement('button');
+        btn.className = `q-pill ${q.key === currentQuality ? 'selected' : ''}`;
+        btn.dataset.tag = q.tag;
+        btn.dataset.key = q.key;
+        btn.textContent = q.label;
+        btn.title       = q.desc;
+        btn.onclick = () => {
+            if (q.key === currentQuality) return;
+            currentQuality = q.key;
+            document.querySelectorAll('.q-pill').forEach(p => {
+                p.classList.toggle('selected', p.dataset.key === q.key);
+            });
+            setQualityBadge(q.key);
+            fetchStream(q.key, activeLang); // Re-fetch with new quality + active lang
+        };
+        qualityPills.appendChild(btn);
+    });
+}
+
+function setQualityBadge(key) {
+    const qDef = QUALITIES.find(q => q.key === key) || QUALITIES[2];
+    qualityBadge.textContent   = qDef.label;
+    qualityBadge.style.color   = key === '4k' ? '#ffd700' : key === '1080p' ? '#39FF14' : '#fff';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SUBTITLES
+═══════════════════════════════════════════════════════════════════════ */
+window.setSub = function(lang) {
+    const tracks = video.textTracks;
+    for (let i = 0; i < tracks.length; i++) {
+        tracks[i].mode = (lang && tracks[i].language === lang) ? 'showing' : 'hidden';
+    }
+    document.getElementById('sub-off').querySelector('i').style.opacity = lang ? '0' : '1';
+    settingsModal.classList.remove('open');
+};
+
+function buildSubTracks() {
+    const container = document.getElementById('sub-tracks');
+    container.innerHTML = '';
+    const tracks = video.textTracks;
+    if (!tracks.length) { container.innerHTML = '<div style="font-size:.78rem;color:var(--muted);padding:4px 0;">No subtitles in stream</div>'; return; }
+    for (let i = 0; i < tracks.length; i++) {
+        const t    = tracks[i];
+        const row  = document.createElement('div');
+        row.className = 'setting-row';
+        row.textContent = t.label || t.language || `Track ${i+1}`;
+        row.onclick = () => setSub(t.language);
+        container.appendChild(row);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PLAY / PAUSE / SEEK CONTROLS
+═══════════════════════════════════════════════════════════════════════ */
+document.getElementById('play-pause-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (video.ended) { video.currentTime = 0; video.play(); return; }
+    if (video.paused) video.play(); else video.pause();
+});
+
+function seek(secs) {
+    video.currentTime = Math.max(0, Math.min(video.duration || 0, video.currentTime + secs));
+}
+function flashSeek(el) {
+    el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+    setTimeout(() => el.classList.remove('pop'), 500);
+}
+
+document.getElementById('rewind-btn').addEventListener('click', (e) => {
+    e.stopPropagation(); seek(-10);
+    flashSeek(document.getElementById('rw-flash'));
+    toast(`<i class="fa fa-backward" style="color:var(--accent)"></i>&nbsp; -10 seconds`);
+});
+document.getElementById('forward-btn').addEventListener('click', (e) => {
+    e.stopPropagation(); seek(10);
+    flashSeek(document.getElementById('fw-flash'));
+    toast(`<i class="fa fa-forward" style="color:var(--accent)"></i>&nbsp; +10 seconds`);
+});
+
+// Double tap to seek on mobile
+let lastTap = 0, tapSide = '';
+document.getElementById('player-shell').addEventListener('touchend', (e) => {
+    if (isLocked) return;
+    const now  = Date.now();
+    const rect = document.getElementById('player-shell').getBoundingClientRect();
+    const x    = e.changedTouches[0].clientX - rect.left;
+    const side = x < rect.width * 0.38 ? 'left' : x > rect.width * 0.62 ? 'right' : 'center';
+    if (now - lastTap < 280 && side === tapSide && side !== 'center') {
+        if (side === 'right') {
+            seek(10); flashSeek(document.getElementById('fw-flash'));
+            toast(`<i class="fa fa-forward" style="color:var(--accent)"></i>&nbsp; +10s`);
+        } else {
+            seek(-10); flashSeek(document.getElementById('rw-flash'));
+            toast(`<i class="fa fa-backward" style="color:var(--accent)"></i>&nbsp; -10s`);
+        }
+    }
+    lastTap = now; tapSide = side;
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VOLUME
+═══════════════════════════════════════════════════════════════════════ */
+volRange.addEventListener('input', () => {
+    video.volume = volRange.value / 100;
+    video.muted  = video.volume === 0;
+});
+document.getElementById('mute-btn').addEventListener('click', () => {
+    video.muted = !video.muted;
+    volRange.value = video.muted ? 0 : Math.round(video.volume * 100);
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SCREEN LOCK
+═══════════════════════════════════════════════════════════════════════ */
+function toggleLock() {
+    isLocked = !isLocked;
+    overlay.classList.toggle('locked', isLocked);
+    lockBtn.classList.toggle('locked', isLocked);
+    document.getElementById('lock-ctrl-btn').classList.toggle('active', isLocked);
+    lockIcon.className     = isLocked ? 'fa fa-lock' : 'fa fa-lock-open';
+    lockCtrlIcon.className = isLocked ? 'fa fa-lock' : 'fa fa-lock-open';
+    toast(isLocked
+        ? `<i class="fa fa-lock" style="color:var(--accent)"></i>&nbsp; Screen Locked`
+        : `<i class="fa fa-lock-open"></i>&nbsp; Screen Unlocked`);
+    if (!isLocked) showUI();
+}
+lockBtn.addEventListener('click',       (e) => { e.stopPropagation(); toggleLock(); });
+lockCtrlBtn.addEventListener('click',   (e) => { e.stopPropagation(); toggleLock(); });
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FULLSCREEN
+═══════════════════════════════════════════════════════════════════════ */
+document.getElementById('fullscreen-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const shell = document.getElementById('player-shell');
+    if (!document.fullscreenElement) {
+        (shell.requestFullscreen || shell.webkitRequestFullscreen).call(shell);
+    } else {
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    }
+});
+document.addEventListener('fullscreenchange', () => {
+    fsIcon.className = document.fullscreenElement ? 'fa fa-compress' : 'fa fa-expand';
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PICTURE-IN-PICTURE
+═══════════════════════════════════════════════════════════════════════ */
+document.getElementById('pip-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    try {
+        if (document.pictureInPictureElement) await document.exitPictureInPicture();
+        else await video.requestPictureInPicture();
+    } catch (err) {
+        toast('Picture-in-Picture not supported on this device.');
+    }
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SETTINGS (Subtitles)
+═══════════════════════════════════════════════════════════════════════ */
+document.getElementById('sub-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    settingsModal.classList.toggle('open');
+    if (settingsModal.classList.contains('open')) buildSubTracks();
+});
+document.getElementById('player-shell').addEventListener('click', () => {
+    settingsModal.classList.remove('open');
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   UI AUTO-HIDE
+═══════════════════════════════════════════════════════════════════════ */
+function showUI() {
+    if (isLocked) return;
+    overlay.classList.remove('ui-hidden');
+    uiVisible = true;
+    resetHideTimer();
+}
+function hideUI() {
+    if (isLocked || video.paused) return;
+    overlay.classList.add('ui-hidden');
+    uiVisible = false;
+}
+function resetHideTimer() {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(hideUI, 4000);
+}
+
+const shell = document.getElementById('player-shell');
+shell.addEventListener('mousemove',  showUI);
+shell.addEventListener('touchstart', showUI, { passive:true });
+shell.addEventListener('click', (e) => {
+    if (!uiVisible && !e.target.closest('#lock-btn')) { showUI(); return; }
+});
+video.addEventListener('pause', () => { showUI(); clearTimeout(hideTimer); });
+video.addEventListener('play',  resetHideTimer);
+
+resetHideTimer();
+
+/* ═══════════════════════════════════════════════════════════════════════
+   KEYBOARD SHORTCUTS (Desktop / Smart TV)
+═══════════════════════════════════════════════════════════════════════ */
+document.addEventListener('keydown', (e) => {
+    if (isLocked) return;
+    showUI();
+    switch (e.code) {
+        case 'Space':
+        case 'KeyK':
+            e.preventDefault();
+            if (video.paused) video.play(); else video.pause();
+            break;
+        case 'ArrowRight':
+        case 'KeyL':
+            e.preventDefault();
+            seek(10);
+            flashSeek(document.getElementById('fw-flash'));
+            break;
+        case 'ArrowLeft':
+        case 'KeyJ':
+            e.preventDefault();
+            seek(-10);
+            flashSeek(document.getElementById('rw-flash'));
+            break;
+        case 'ArrowUp':
+            e.preventDefault();
+            video.volume = Math.min(1, video.volume + 0.1);
+            toast(`<i class="fa fa-volume-high" style="color:var(--accent)"></i>&nbsp; Volume ${Math.round(video.volume * 100)}%`);
+            break;
+        case 'ArrowDown':
+            e.preventDefault();
+            video.volume = Math.max(0, video.volume - 0.1);
+            toast(`<i class="fa fa-volume-low"></i>&nbsp; Volume ${Math.round(video.volume * 100)}%`);
+            break;
+        case 'KeyF':
+            e.preventDefault();
+            document.getElementById('fullscreen-btn').click();
+            break;
+        case 'KeyM':
+            e.preventDefault();
+            video.muted = !video.muted;
+            break;
+    }
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ERROR RETRY BUTTONS
+═══════════════════════════════════════════════════════════════════════ */
+document.getElementById('err-retry').onclick = () => fetchStream(currentQuality, 'hindi');
+document.getElementById('err-try1080').onclick = () => {
+    currentQuality = '1080p';
+    fetchStream('1080p', 'hindi');
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════════════════════ */
+function formatTime(secs) {
+    if (!secs || isNaN(secs)) return '0:00';
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = String(Math.floor(secs % 60)).padStart(2, '0');
+    return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SUPABASE WATCH HISTORY + COIN REWARD
+═══════════════════════════════════════════════════════════════════════ */
+async function syncWatchHistory() {
+    try {
+        await supabase.rpc('upsert_movie', {
+            p_tmdb_id:    movieId,
+            p_title:      movieTitle,
+            p_poster_path: backdropPath,
+            p_type:       mediaType,
+        });
+    } catch (e) {}
+
+    setInterval(async () => {
+        try {
+            const { data } = await supabase.rpc('track_watch_time', { p_tmdb_id: movieId, p_minutes: 1 });
+            if (data?.reward > 0) {
+                toast(`<i class="fa fa-coins" style="color:#ffd700"></i>&nbsp; +${data.reward} OP coins earned!`);
+            }
+        } catch (e) {}
+    }, 60000);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════════════════ */
+buildQualityPills();
+setQualityBadge(currentQuality);
+
+// Start fetching the stream
+await fetchStream(currentQuality, 'hindi');
+syncWatchHistory();
+
+}); // END DOMContentLoaded
+</script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050505">
+    <link rel="manifest" href="manifest.json">
+    <title>Login - OnixPlay+</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .auth-container {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #050505 0%, #121212 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        /* Fancy background effect */
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(57, 255, 20, 0.05) 0%, transparent 70%);
+            top: -50%;
+            left: -50%;
+            animation: rotate 20s linear infinite;
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .auth-box {
+            position: relative;
+            z-index: 10;
+            background: var(--surface-color);
+            padding: 40px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+            border: 1px solid rgba(57, 255, 20, 0.1);
+        }
+        .auth-logo {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary-accent);
+            margin-bottom: 30px;
+            text-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
+        }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 0.9rem; }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary-accent);
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary-accent);
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        .auth-btn:hover, .auth-btn.focused {
+            background: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(57, 255, 20, 0.2);
+        }
+        .auth-switch {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .auth-switch a {
+            color: var(--primary-accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* OTP Section Hidden by default */
+        #otp-section { display: none; }
+        
+        .otp-inputs {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        .otp-inputs input {
+            width: 45px;
+            height: 55px;
+            text-align: center;
+            font-size: 1.5rem;
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 6px;
+            color: var(--primary-accent);
+        }
+
+        #error-msg {
+            color: #ff4a4a;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 0.85rem;
+            min-height: 1.2rem;
+        }
+        
+        .success-msg { color: var(--primary-accent); }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="auth-logo">
+                <img src="Assets/Images/moviepirate_icon.png" alt="OnixPlay+" style="height: 60px;">
+            </div>
+            
+            <!-- Login/Signup Form -->
+            <div id="auth-main-section">
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" class="tv-focusable" placeholder="pirate@sea.com">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" class="tv-focusable" placeholder="********">
+                </div>
+                <div class="input-group" id="confirm-pass-group" style="display: none;">
+                    <label>Confirm Password</label>
+                    <input type="password" id="confirm-password" class="tv-focusable" placeholder="********">
+                </div>
+                
+                <button class="auth-btn tv-focusable" id="auth-submit-btn">Sign In</button>
+                
+                <div class="auth-switch">
+                    <span id="switch-text">New to OnixPlay+?</span> 
+                    <a href="#" id="switch-mode-link" class="tv-focusable">Sign up now</a>
+                </div>
+            </div>
+
+            <!-- OTP Verification Section -->
+            <div id="otp-section">
+                <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+                    We've sent a 6-digit code to <br><b id="display-email" style="color: #fff;"></b>
+                </p>
+                <div class="otp-inputs">
+                    <input type="text" maxlength="1" class="otp-field tv-focusable">
+                    <input type="text" maxlength="1" class="otp-field tv-focusable">
+                    <input type="text" maxlength="1" class="otp-field tv-focusable">
+                    <input type="text" maxlength="1" class="otp-field tv-focusable">
+                    <input type="text" maxlength="1" class="otp-field tv-focusable">
+                    <input type="text" maxlength="1" class="otp-field tv-focusable">
+                </div>
+                <button class="auth-btn tv-focusable" id="verify-otp-btn">Verify Code</button>
+                <div class="auth-switch">
+                    Didn't get the code? <a href="#" id="resend-otp" class="tv-focusable">Resend</a>
+                </div>
+            </div>
+
+            <div id="error-msg"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/tv-nav.js"></script>
+</body>
+</html>

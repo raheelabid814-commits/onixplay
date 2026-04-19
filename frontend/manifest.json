@@ -1,0 +1,42 @@
+{
+  "name": "OnixPlay+",
+  "short_name": "OnixPlay+",
+  "description": "Stream unlimited movies, TV shows and anime — OnixPlay+ ka mazaa lo!",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "categories": ["entertainment", "video"],
+  "icons": [
+    {
+      "src": "./Assets/Images/app_logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "./Assets/Images/app_logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "./Assets/Images/app_logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "./Assets/Images/app_logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "OnixPlay+ Home"
+    }
+  ]
+}
