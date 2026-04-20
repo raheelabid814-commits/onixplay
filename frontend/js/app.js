@@ -928,14 +928,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     async function fetchUpcomingWithVideos() {
         const today = new Date();
         const future = new Date();
-        future.setDate(today.getDate() + 10);
+        future.setDate(today.getDate() + 11); // May 1 approx
         
         const dateStr = (d) => d.toISOString().split('T')[0];
         
-        const movieRes = await fetch(`${TMDB_BASE}/discover/movie?api_key=${TMDB_API_KEY}&primary_release_date.gte=${dateStr(today)}&primary_release_date.lte=${dateStr(future)}&sort_by=primary_release_date.asc`);
+        // Fetch Movies (Sorted by Popularity to get "Famous" ones)
+        const movieRes = await fetch(`${TMDB_BASE}/discover/movie?api_key=${TMDB_API_KEY}&primary_release_date.gte=${dateStr(today)}&primary_release_date.lte=${dateStr(future)}&sort_by=popularity.desc`);
         const movieData = await movieRes.json();
         
-        const tvRes = await fetch(`${TMDB_BASE}/discover/tv?api_key=${TMDB_API_KEY}&first_air_date.gte=${dateStr(today)}&first_air_date.lte=${dateStr(future)}&sort_by=first_air_date.asc`);
+        // Fetch TV (Sorted by Popularity)
+        const tvRes = await fetch(`${TMDB_BASE}/discover/tv?api_key=${TMDB_API_KEY}&first_air_date.gte=${dateStr(today)}&first_air_date.lte=${dateStr(future)}&sort_by=popularity.desc`);
         const tvData = await tvRes.json();
         
         const combined = [
@@ -1004,18 +1006,24 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <div class="nh-video-container">
                         ${rankHtml}
                         ${trailerId ? 
-                            `<iframe src="https://www.youtube.com/embed/${trailerId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${trailerId}" allow="autoplay"></iframe>` : 
+                            `<iframe src="https://www.youtube.com/embed/${trailerId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${trailerId}&playsinline=1&enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>` : 
                             `<img src="https://image.tmdb.org/t/p/w500${item.backdrop_path || item.poster_path}" style="width:100%; height:100%; object-fit:cover;">`
                         }
                     </div>
                     <div class="nh-info">
                         <div class="nh-title">${item.title || item.name}</div>
-                        <div class="nh-release-desc">Coming on ${releaseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })}</div>
+                        <div class="nh-release-desc">${category === 'coming_soon' ? 'Coming on ' : 'Released '} ${releaseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })}</div>
                         <div class="nh-overview">${item.overview}</div>
                         <div class="nh-actions">
-                            <button class="btn-nh-remind ${isReminded ? 'active' : ''}" data-id="${item.id}">
-                                <i class="fa ${isReminded ? 'fa-check' : 'fa-bell'}"></i> ${isReminded ? 'Reminded' : 'Remind Me'}
-                            </button>
+                            ${category === 'coming_soon' ? `
+                                <button class="btn-nh-remind ${isReminded ? 'active' : ''}" data-id="${item.id}">
+                                    <i class="fa ${isReminded ? 'fa-check' : 'fa-bell'}"></i> ${isReminded ? 'Reminded' : 'Remind Me'}
+                                </button>
+                            ` : `
+                                <button class="btn-nh-remind active" style="background: var(--primary-accent);" onclick="window.location.href='movie.html?id=${item.id}&type=${type}'">
+                                    <i class="fa fa-play"></i> Watch Now
+                                </button>
+                            `}
                         </div>
                     </div>
                 </div>
