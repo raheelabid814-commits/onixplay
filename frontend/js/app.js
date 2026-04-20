@@ -7,6 +7,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     // TMDB CONFIGURATION
     const TMDB_API_KEY = 'd0c153faeb709eb8deffeece3081d375';
     const TMDB_BASE = 'https://api.themoviedb.org/3';
+    
+    // Dynamic Image Helper for Performance
+    function getTMDBImage(path, quality = 'thumb') {
+        if (!path) return 'https://via.placeholder.com/300x450?text=No+Poster';
+        const isMobile = window.innerWidth <= 768;
+        let size = 'w500'; // Default
+        
+        if (quality === 'thumb') size = isMobile ? 'w185' : 'w342';
+        if (quality === 'logo') size = 'w185';
+        if (quality === 'hero') size = isMobile ? 'w780' : 'original';
+        
+        const cleanPath = path.startsWith('/') ? path : '/' + path;
+        return `https://image.tmdb.org/t/p/${size}${cleanPath}`;
+    }
 
     // ANILIST CONFIGURATION
     const ANILIST_URL = 'https://graphql.anilist.co';
@@ -80,6 +94,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     if(!session) {
         window.location.href = 'auth.html';
         return;
+    }
+
+    // Performance Mode Auto-Detection
+    const isMobile = window.innerWidth <= 768;
+    const isLowEnd = (navigator.deviceMemory && navigator.deviceMemory < 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4);
+    
+    if (isMobile || isLowEnd) {
+        document.body.classList.add('mobile-optimized');
+        if (isLowEnd) document.body.classList.add('lite-mode');
+        console.log(`🚀 Performance Mode: ${isLowEnd ? 'Ultra-Lite' : 'Standard Mobile'}`);
     }
 
     // Load Profile Data
@@ -524,7 +548,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const div = document.createElement('div');
             div.className = 'vert-item';
             div.innerHTML = `
-                <img src="https://image.tmdb.org/t/p/w300${imgPath}" alt="${title}" loading="lazy">
+                <img src="${getTMDBImage(imgPath, 'thumb')}" alt="${title}" loading="lazy">
                 <div class="vert-item-title">${title}</div>
                 <div class="vert-item-play"><i class="fa fa-play" style="font-size: 0.8rem; margin-left: 3px;"></i></div>
             `;
@@ -707,16 +731,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             
             // Fix: Handle inconsistent poster path structures from different joins
             let rawPath = movie.poster_path;
-            // If movie comes from a join, it might be nested or have a full path
-            let imgUrl = '';
-            if (rawPath && !rawPath.startsWith('http')) {
-                const cleanPath = rawPath.startsWith('/') ? rawPath : '/' + rawPath;
-                imgUrl = `https://image.tmdb.org/t/p/w500${cleanPath}`;
-            } else if (rawPath && rawPath.startsWith('http')) {
-                imgUrl = rawPath;
-            }
+            let imgUrl = getTMDBImage(rawPath, 'thumb');
 
-            slide.innerHTML = `<img src="${imgUrl || 'https://via.placeholder.com/300x450?text=Loading...'}" alt="${movie.title}" onerror="this.src='https://via.placeholder.com/300x450?text=No+Poster'">`;
+            slide.innerHTML = `<img src="${imgUrl}" alt="${movie.title}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x450?text=No+Poster'">`;
             
             if (!rawPath) {
                 const type = movie.type || (movie.name ? 'tv' : 'movie');
@@ -773,8 +790,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         items.forEach(item => {
             const slide = document.createElement('div');
             slide.className = 'swiper-slide poster-card tv-focusable';
-            const imgUrl = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/300x450?text=No+Poster';
-            slide.innerHTML = `<img src="${imgUrl}" alt="${item.title || item.name}" onerror="this.src='https://via.placeholder.com/300x450?text=Error+Loading'">`;
+            const imgUrl = getTMDBImage(item.poster_path, 'thumb');
+            slide.innerHTML = `<img src="${imgUrl}" alt="${item.title || item.name}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x450?text=Error+Loading'">`;
             slide.onclick = () => {
                 window.location.href = `movie.html?id=${item.id}&type=${item.name ? 'tv' : 'movie'}`;
             };
@@ -812,7 +829,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if(titleEl) titleEl.innerText = item.title || item.name;
         if(descEl) descEl.innerText = item.overview;
         if(heroEl) {
-            const bg = item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : '';
+            const bg = getTMDBImage(item.backdrop_path, 'hero');
             heroEl.style.backgroundImage = `url('${bg}')`;
         }
         
@@ -1003,12 +1020,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <span class="nh-day">${releaseDate.getDate()}</span>
                 </div>
                 <div class="nh-content">
-                    <div class="nh-video-container">
+                    <div class="nh-video-container" data-trailer-id="${trailerId}" data-has-iframe="false">
                         ${rankHtml}
-                        ${trailerId ? 
-                            `<iframe src="https://www.youtube.com/embed/${trailerId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${trailerId}&playsinline=1&enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>` : 
-                            `<img src="https://image.tmdb.org/t/p/w500${item.backdrop_path || item.poster_path}" style="width:100%; height:100%; object-fit:cover;">`
-                        }
+                        <img src="${getTMDBImage(item.backdrop_path, 'hero')}" class="nh-placeholder-img" style="width:100%; height:100%; object-fit:cover;">
+                        <div class="nh-video-loading-spinner" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);"><i class="fa fa-circle-notch fa-spin"></i></div>
                     </div>
                     <div class="nh-info">
                         <div class="nh-title">${item.title || item.name}</div>
@@ -1031,8 +1046,38 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             card.querySelector('.btn-nh-remind').onclick = (e) => toggleReminder(item, e.currentTarget);
             feed.appendChild(card);
+
+            // Observe the video container for on-demand loading
+            const vidContainer = card.querySelector('.nh-video-container');
+            if (trailerId) trailerObserver.observe(vidContainer);
         }
     }
+
+    // TRAILER OBSERVER (Memory Management)
+    const trailerObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const container = entry.target;
+            const tId = container.getAttribute('data-trailer-id');
+            const hasIframe = container.getAttribute('data-has-iframe') === 'true';
+
+            if (entry.isIntersecting) {
+                // Load Iframe when in view
+                if (!hasIframe && tId) {
+                    container.innerHTML += `<iframe src="https://www.youtube.com/embed/${tId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${tId}&playsinline=1&enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+                    container.setAttribute('data-has-iframe', 'true');
+                    container.querySelector('.nh-placeholder-img').style.display = 'none';
+                }
+            } else {
+                // Remove Iframe when out of view to save RAM
+                if (hasIframe) {
+                    const iframe = container.querySelector('iframe');
+                    if (iframe) iframe.remove();
+                    container.setAttribute('data-has-iframe', 'false');
+                    container.querySelector('.nh-placeholder-img').style.display = 'block';
+                }
+            }
+        });
+    }, { threshold: 0.3 }); // Only load when 30% visible
 
     function toggleReminder(item, btn) {
         let reminders = JSON.parse(localStorage.getItem('pirate_reminders') || '[]');

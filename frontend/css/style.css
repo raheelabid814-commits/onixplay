@@ -35,6 +35,26 @@ body {
 }
 
 /* ==================================
+   LITE MODE (Low-End Performance)
+   ================================== */
+body.lite-mode *, body.mobile-optimized .click-ripple {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+body.lite-mode .liquid-bg {
+    filter: blur(40px); /* Lower blur = faster */
+    opacity: 0.5;
+}
+body.lite-mode .nav-links li a, body.lite-mode .modal-content, body.lite-mode .pirate-toast {
+    background: rgba(15, 15, 15, 0.98) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+body.lite-mode .view-animate {
+    animation-duration: 0.3s; /* Snappier on slow phones */
+    filter: none !important; /* No blur during transform */
+}
+
+/* ==================================
    LIQUID GLASS BACKGROUND (Hardware Accelerated)
    ================================== */
 .liquid-bg {
@@ -60,7 +80,24 @@ body {
     100% { transform: translate3d(0, 0, 0) rotate(0deg); }
 }
 
-/* Zero-Delay Response & Optimization */
+/* ==================================
+   SKELETON LOADING
+   ================================== */
+.skeleton {
+    background: linear-gradient(90deg, #1f1f1f 25%, #2a2a2a 50%, #1f1f1f 75%);
+    background-size: 200% 100%;
+    animation: skeletonLoading 1.5s infinite linear;
+}
+@keyframes skeletonLoading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.skeleton-text {
+    width: 100%;
+    height: 12px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
 button, a, .tv-focusable, .nav-item, .filter-btn, .plan-card {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
