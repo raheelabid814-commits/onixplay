@@ -25,6 +25,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <!-- Premium Liquid Background -->
+    <div class="liquid-bg"></div>
+
     <!-- Intro Video Splash Screen -->
     <div id="splash-screen">
         <video id="intro-video" playsinline preload="auto"></video>
@@ -409,6 +412,28 @@
                     <div class="swiper trailers-watched-swiper">
                         <div class="swiper-wrapper" id="trailers-watched-row"></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- NEW & HOT PAGE -->
+            <div id="new-hot-page" style="display: none; padding-top: 55px; color: white; min-height: 100vh;">
+                <!-- Header Title -->
+                <div style="padding: 10px 4% 5px; background: #050505; position: sticky; top: 0; z-index: 100;">
+                    <h1 style="font-size: 1.6rem; font-weight: 800;">New & Hot</h1>
+                </div>
+
+                <!-- Sticky Filter Bar -->
+                <div class="new-hot-filters" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px 4%; background: #050505; position: sticky; top: 50px; z-index: 99;">
+                    <button class="nh-filter-btn active" data-type="coming_soon"><i class="fa fa-calendar-alt"></i> Coming Soon</button>
+                    <button class="nh-filter-btn" data-type="everyone_watching"><i class="fa fa-fire"></i> Everyone's Watching</button>
+                    <button class="nh-filter-btn" data-type="top10_series"><i class="fa fa-tv"></i> Top 10 Series</button>
+                    <button class="nh-filter-btn" data-type="top10_movies"><i class="fa fa-film"></i> Top 10 Films</button>
+                    <button class="nh-filter-btn" data-type="top10_anime"><i class="fa fa-ghost"></i> Top 10 Anime</button>
+                </div>
+
+                <!-- Content Feed -->
+                <div id="new-hot-feed" class="new-hot-feed">
+                    <!-- Items will be injected here -->
                 </div>
             </div>
 

@@ -186,13 +186,33 @@ document.addEventListener("DOMContentLoaded", async () => {
         const animeSection = document.getElementById('anime-sections');
         const heroSection = document.getElementById('hero-section');
         const mobileTopNav = document.querySelector('.mobile-top-nav');
+        const rowsContainer = document.querySelector('.rows-container');
+        const newHotPage = document.getElementById('new-hot-page');
+
+        // Add bounce/spring animation to the app container
+        rowsContainer?.classList.remove('view-animate');
+        void rowsContainer?.offsetWidth; // Trigger reflow
+        rowsContainer?.classList.add('view-animate');
 
         // Reset Display - Hide all by default
         Object.values(rows).forEach(r => { if(r) r.style.display = 'none'; });
         if(heroSection) heroSection.style.display = 'block';
-        if(newSearchPage) newSearchPage.style.display = 'none';
-        if(myOpPage) myOpPage.style.display = 'none';
-        if(animeSection) animeSection.style.display = 'none';
+        if(newSearchPage) { 
+            newSearchPage.style.display = 'none';
+            newSearchPage.classList.remove('view-animate');
+        }
+        if(myOpPage) {
+            myOpPage.style.display = 'none';
+            myOpPage.classList.remove('view-animate');
+        }
+        if(animeSection) {
+            animeSection.style.display = 'none';
+            animeSection.classList.remove('view-animate');
+        }
+        if(newHotPage) {
+            newHotPage.style.display = 'none';
+            newHotPage.classList.remove('view-animate');
+        }
 
         // Categorical Rows
         const movieKeys = ['trending', 'british', 'thriller', 'comedy', 'real_life', 'books', 'good_laugh', 'asian_films', 'top10_films', 'romantic_films', 'crowd_pleasers', 'new_on_netflix', 'blockbuster', 'action_getin', 'made_in_india', 'love_these'];
@@ -211,20 +231,37 @@ document.addEventListener("DOMContentLoaded", async () => {
             if(mobileTopNav) mobileTopNav.classList.remove('force-hide');
         } else if (view === 'anime') {
             if(heroSection) heroSection.style.display = 'none';
-            if(animeSection) animeSection.style.display = 'block';
+            if(animeSection) {
+                animeSection.style.display = 'block';
+                animeSection.classList.add('view-animate');
+            }
             if(mobileTopNav) mobileTopNav.classList.remove('force-hide');
         } else if (view === 'search') {
             if(heroSection) heroSection.style.display = 'none';
-            if(newSearchPage) newSearchPage.style.display = 'block';
-            if(mobileTopNav) mobileTopNav.classList.add('force-hide'); // Hide on search
+            if(newSearchPage) {
+                newSearchPage.style.display = 'block';
+                newSearchPage.classList.add('view-animate');
+            }
+            if(mobileTopNav) mobileTopNav.classList.add('force-hide'); 
             document.getElementById('netflix-search-input')?.focus();
         } else if (view === 'my_op') {
             if(heroSection) heroSection.style.display = 'none';
-            if(myOpPage) myOpPage.style.display = 'block';
-            if(mobileTopNav) mobileTopNav.classList.add('force-hide'); // Hide on My OP (page has own header)
+            if(myOpPage) {
+                myOpPage.style.display = 'block';
+                myOpPage.classList.add('view-animate');
+            }
+            if(mobileTopNav) mobileTopNav.classList.add('force-hide'); 
+        } else if (view === 'news') {
+            if(heroSection) heroSection.style.display = 'none';
+            if(newHotPage) {
+                newHotPage.style.display = 'block';
+                newHotPage.classList.add('view-animate');
+                loadNewAndHot(); // Implementation below
+            }
+            if(mobileTopNav) mobileTopNav.classList.add('force-hide');
         }
 
-        if(view !== 'search' && view !== 'my_op') refreshContent(view);
+        if(view !== 'search' && view !== 'my_op' && view !== 'news') refreshContent(view);
     }
 
     // Attach Nav Clicks
@@ -380,7 +417,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if(botNavNews) botNavNews.addEventListener('click', () => {
         setActiveBotNav(botNavNews);
-        switchView('home');
+        switchView('news');
     });
 
     if(botNavWallet) botNavWallet.addEventListener('click', () => {
@@ -856,6 +893,170 @@ document.addEventListener("DOMContentLoaded", async () => {
         if(app) app.style.display = 'block';
         switchView('home');
     }
+
+    // ==================================
+    // NEW & HOT LOGIC
+    // ==================================
+    const nhFilters = document.querySelectorAll('.nh-filter-btn');
+    nhFilters.forEach(btn => {
+        btn.onclick = () => {
+            nhFilters.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            loadNewAndHot(btn.getAttribute('data-type'));
+        };
+    });
+
+    async function loadNewAndHot(type = 'coming_soon') {
+        const feed = document.getElementById('new-hot-feed');
+        if(!feed) return;
+        feed.innerHTML = '<p style="text-align:center; padding:50px; color:#666;">Loading high-quality previews...</p>';
+
+        try {
+            if (type === 'coming_soon') {
+                await fetchUpcomingWithVideos();
+            } else if (type === 'everyone_watching') {
+                await fetchEveryoneWatching();
+            } else if (type.startsWith('top10')) {
+                await fetchTop10Lists(type);
+            }
+        } catch (e) {
+            console.error("New & Hot Error:", e);
+            feed.innerHTML = '<p style="text-align:center; padding:50px; color:#666;">Failed to load. Try again later.</p>';
+        }
+    }
+
+    async function fetchUpcomingWithVideos() {
+        const today = new Date();
+        const future = new Date();
+        future.setDate(today.getDate() + 10);
+        
+        const dateStr = (d) => d.toISOString().split('T')[0];
+        
+        const movieRes = await fetch(`${TMDB_BASE}/discover/movie?api_key=${TMDB_API_KEY}&primary_release_date.gte=${dateStr(today)}&primary_release_date.lte=${dateStr(future)}&sort_by=primary_release_date.asc`);
+        const movieData = await movieRes.json();
+        
+        const tvRes = await fetch(`${TMDB_BASE}/discover/tv?api_key=${TMDB_API_KEY}&first_air_date.gte=${dateStr(today)}&first_air_date.lte=${dateStr(future)}&sort_by=first_air_date.asc`);
+        const tvData = await tvRes.json();
+        
+        const combined = [
+            ...(movieData.results || []).map(m => ({...m, media_type: 'movie'})),
+            ...(tvData.results || []).map(t => ({...t, media_type: 'tv'}))
+        ].sort((a,b) => new Date(a.release_date || a.first_air_date) - new Date(b.release_date || b.first_air_date));
+
+        renderNewHotItems(combined.slice(0, 15), 'coming_soon');
+    }
+
+    async function fetchEveryoneWatching() {
+        const res = await fetch(`${TMDB_BASE}/trending/all/week?api_key=${TMDB_API_KEY}`);
+        const data = await res.json();
+        renderNewHotItems(data.results.slice(0, 15), 'everyone_watching');
+    }
+
+    async function fetchTop10Lists(type) {
+        let url = '';
+        if (type === 'top10_series') url = `${TMDB_BASE}/tv/popular?api_key=${TMDB_API_KEY}&region=PK`;
+        else if (type === 'top10_movies') url = `${TMDB_BASE}/movie/popular?api_key=${TMDB_API_KEY}&region=PK`;
+        else if (type === 'top10_anime') url = `${TMDB_BASE}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&sort_by=popularity.desc`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+        renderNewHotItems(data.results.slice(0, 10), type);
+    }
+
+    async function renderNewHotItems(items, category) {
+        const feed = document.getElementById('new-hot-feed');
+        if(!feed) return;
+        feed.innerHTML = '';
+
+        if(!items || items.length === 0) {
+            feed.innerHTML = '<p style="text-align:center; padding:50px; color:#666;">Nothing new right now.</p>';
+            return;
+        }
+
+        const reminders = JSON.parse(localStorage.getItem('pirate_reminders') || '[]');
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const type = item.media_type || (item.name ? 'tv' : 'movie');
+            const releaseDate = new Date(item.release_date || item.first_air_date);
+            const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+            
+            const card = document.createElement('div');
+            card.className = 'nh-card view-animate';
+            
+            let trailerId = '';
+            try {
+                const vRes = await fetch(`${TMDB_BASE}/${type}/${item.id}/videos?api_key=${TMDB_API_KEY}`);
+                const vData = await vRes.json();
+                const trailer = vData.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+                if(trailer) trailerId = trailer.key;
+            } catch(e) {}
+
+            const isReminded = reminders.some(r => r.id === item.id);
+            const rankHtml = category.startsWith('top10') ? `<div class="nh-rank-num">${i + 1}</div>` : '';
+
+            card.innerHTML = `
+                <div class="nh-date-sidebar">
+                    <span class="nh-month">${months[releaseDate.getMonth()]}</span>
+                    <span class="nh-day">${releaseDate.getDate()}</span>
+                </div>
+                <div class="nh-content">
+                    <div class="nh-video-container">
+                        ${rankHtml}
+                        ${trailerId ? 
+                            `<iframe src="https://www.youtube.com/embed/${trailerId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${trailerId}" allow="autoplay"></iframe>` : 
+                            `<img src="https://image.tmdb.org/t/p/w500${item.backdrop_path || item.poster_path}" style="width:100%; height:100%; object-fit:cover;">`
+                        }
+                    </div>
+                    <div class="nh-info">
+                        <div class="nh-title">${item.title || item.name}</div>
+                        <div class="nh-release-desc">Coming on ${releaseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })}</div>
+                        <div class="nh-overview">${item.overview}</div>
+                        <div class="nh-actions">
+                            <button class="btn-nh-remind ${isReminded ? 'active' : ''}" data-id="${item.id}">
+                                <i class="fa ${isReminded ? 'fa-check' : 'fa-bell'}"></i> ${isReminded ? 'Reminded' : 'Remind Me'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            card.querySelector('.btn-nh-remind').onclick = (e) => toggleReminder(item, e.currentTarget);
+            feed.appendChild(card);
+        }
+    }
+
+    function toggleReminder(item, btn) {
+        let reminders = JSON.parse(localStorage.getItem('pirate_reminders') || '[]');
+        const idx = reminders.findIndex(r => r.id === item.id);
+        
+        if (idx > -1) {
+            reminders.splice(idx, 1);
+            btn.classList.remove('active');
+            btn.innerHTML = '<i class="fa fa-bell"></i> Remind Me';
+        } else {
+            reminders.push({ id: item.id, title: item.title || item.name, date: item.release_date || item.first_air_date });
+            btn.classList.add('active');
+            btn.innerHTML = '<i class="fa fa-check"></i> Reminded';
+            showToast("Reminder set for release day!");
+            if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+        }
+        localStorage.setItem('pirate_reminders', JSON.stringify(reminders));
+    }
+
+    function checkDailyReminders() {
+        const todayStr = new Date().toISOString().split('T')[0];
+        let reminders = JSON.parse(localStorage.getItem('pirate_reminders') || '[]');
+        reminders.forEach(r => {
+            if (r.date === todayStr) {
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification(`Release Day! 🎬`, { body: `${r.title} is now available!`, icon: './Assets/Images/app_logo.jpeg' });
+                }
+            }
+        });
+        localStorage.setItem('pirate_reminders', JSON.stringify(reminders.filter(r => new Date(r.date) >= new Date(todayStr))));
+    }
+    checkDailyReminders();
 
     window.addEventListener("scroll", () => {
         if(navbar) {

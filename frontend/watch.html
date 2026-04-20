@@ -900,58 +900,71 @@ async function fetchStream(quality = currentQuality, lang = 'hindi') {
     }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   VIDEO ELEMENT EVENTS
-═══════════════════════════════════════════════════════════════════════ */
-video.addEventListener('canplay', () => {
-    hideLoading();
-    buildAudioTrackPills();
-});
-
-video.addEventListener('play', () => {
-    playIcon.className     = 'fa fa-pause';
-    bufferingRing.classList.remove('show');
-    // Rotate to landscape automatically
-    if (isMobile && screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(e => console.log('Orientation lock unavailable:', e));
+/* ══════════════════════════════════════════�async function buildAudioTrackPills() {
+    if (audioPills.children.length > 0) return; // Only build once
+    audioPills.innerHTML = '<span style="font-size:0.75rem;color:var(--muted)">Checking audio tracks...</span>';
+    
+    try {
+        const res = await fetch(`${BACKEND_URL}/api/metadata?id=${movieId}&type=${mediaType}`);
+        const result = await res.json();
+        
+        if (result.status !== 'success') throw new Error(result.message);
+        
+        const langs = result.data.languages || [];
+        
+        // Ensure standard UI fallbacks if not in list
+        if (!langs.find(l => l.code === 'en' || l.code?.includes('eng'))) langs.unshift({ code: 'en', name: 'English' });
+        if (!langs.find(l => l.code === 'hi' || l.code?.includes('hin'))) langs.push({ code: 'hi', name: 'Hindi' });
+        
+        audioPills.innerHTML = '';
+        langs.forEach((lg, i) => {
+            const btn = document.createElement('button');
+            const code = (lg.code || '').toLowerCase();
+            const isHindiPref = code.includes('hi') || code.includes('hin');
+            const isEngPref = code.includes('en') || code.includes('eng');
+            
+            btn.className = `pill`;
+            if (isHindiPref) btn.classList.add('active'); // Default starting language
+            
+            let flag = '🌐 ';
+            if (isHindiPref) flag = '🇮🇳 ';
+            else if (isEngPref) flag = '🇺🇸 ';
+            else if (code.includes('ja')) flag = '🇯🇵 ';
+            else if (code.includes('ko')) flag = '🇰🇷 ';
+            
+            btn.innerHTML  = `<span>${flag}</span>${lg.name || lg.native || lg.code}`;
+            
+            btn.onclick = () => {
+                document.querySelectorAll('#audio-pills .pill').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                const selectedLang = isEngPref ? 'english' : isHindiPref ? 'hindi' : lg.name.toLowerCase();
+                toast(`Switching to ${lg.name || lg.code} stream...`);
+                activeLang = selectedLang;
+                fetchStream(currentQuality, activeLang);
+            };
+            audioPills.appendChild(btn);
+        });
+        
+    } catch(err) {
+        console.error("Metadata fetch failed, using fallbacks:", err);
+        audioPills.innerHTML = '';
+        // Basic fallback
+        ['English', 'Hindi'].forEach(l => {
+            const btn = document.createElement('button');
+            btn.className = 'pill';
+            if (l === 'Hindi') btn.classList.add('active');
+            btn.textContent = l;
+            btn.onclick = () => {
+                document.querySelectorAll('#audio-pills .pill').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                activeLang = l.toLowerCase();
+                fetchStream(currentQuality, activeLang);
+            };
+            audioPills.appendChild(btn);
+        });
     }
-});
-video.addEventListener('pause', () => {
-    playIcon.className = 'fa fa-play';
-});
-video.addEventListener('waiting', () => {
-    bufferingRing.classList.add('show');
-    playIcon.className = '';
-});
-video.addEventListener('playing', () => {
-    bufferingRing.classList.remove('show');
-    playIcon.className = 'fa fa-pause';
-});
-video.addEventListener('ended', () => {
-    playIcon.className = 'fa fa-rotate-right';
-    overlay.classList.remove('ui-hidden');
-});
-video.addEventListener('error', (e) => {
-    const codes = {1:'Aborted',2:'Network error',3:'Decode error',4:'Format unsupported'};
-    const msg = codes[video.error?.code] || 'Unknown playback error';
-    showError('Playback Error', `${msg}. The stream may have expired — please retry.`);
-});
-
-/* Real seekbar ─────────────────────────────────────────────────────── */
-video.addEventListener('timeupdate', () => {
-    if (isSeeking || !video.duration) return;
-    const pct = (video.currentTime / video.duration) * 100;
-    seekFill.style.width  = pct + '%';
-    seekThumb.style.left  = pct + '%';
-    timeCurrent.textContent = formatTime(video.currentTime);
-});
-
-video.addEventListener('durationchange', () => {
-    timeTotal.textContent = formatTime(video.duration);
-});
-
-video.addEventListener('progress', () => {
-    if (!video.duration || !video.buffered.length) return;
+}
+n;
     const pct = (video.buffered.end(video.buffered.length - 1) / video.duration) * 100;
     seekBuffered.style.width = pct + '%';
 });

@@ -144,3 +144,19 @@ function showInstallBanner() {
         localStorage.setItem('pirate_app_install_dismissed', 'true');
     };
 }
+
+// ==========================================
+// LIQUID CLICK FEEDBACK (Ripple)
+// ==========================================
+document.addEventListener('click', (e) => {
+    const ripple = document.createElement('div');
+    ripple.className = 'click-ripple';
+    ripple.style.left = `${e.clientX}px`;
+    ripple.style.top = `${e.clientY}px`;
+    document.body.appendChild(ripple);
+    
+    // Remove after animation (0.6s)
+    setTimeout(() => {
+        ripple.remove();
+    }, 600);
+});
