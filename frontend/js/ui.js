@@ -144,29 +144,3 @@ function showInstallBanner() {
         localStorage.setItem('pirate_app_install_dismissed', 'true');
     };
 }
-
-// ==========================================
-// LIQUID CLICK FEEDBACK (Ripple & Haptic)
-// ==========================================
-document.addEventListener('click', (e) => {
-    // 1. Haptic Feedback (Vibration)
-    if ("vibrate" in navigator) {
-        navigator.vibrate(10); // Subtle tick
-    }
-
-    // 2. Optimized Ripple
-    const ripple = document.createElement('div');
-    ripple.className = 'click-ripple';
-    ripple.style.left = `${e.clientX}px`;
-    ripple.style.top = `${e.clientY}px`;
-    
-    // Performance: Use transform3d for hardware acceleration
-    ripple.style.transform = 'translate3d(-50%, -50%, 0) scale(0)';
-    
-    document.body.appendChild(ripple);
-    
-    // Remove after animation (0.6s)
-    setTimeout(() => {
-        ripple.remove();
-    }, 600);
-});

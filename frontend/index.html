@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7,27 +8,25 @@
     <meta name="theme-color" content="#050505">
     <meta name="description" content="Stream unlimited movies, TV shows and anime on OnixPlay+.">
     <meta name="mobile-web-app-capable" content="yes">
-    
+
     <!-- Apple iOS PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="OnixPlay+">
     <link rel="apple-touch-icon" href="Assets/Images/app_logo.jpeg">
     <link rel="apple-touch-startup-image" href="Assets/Images/app_logo.jpeg">
-    
+
     <!-- Manifest -->
     <link rel="manifest" href="manifest.json">
     <title>OnixPlay+</title>
     <link rel="stylesheet" href="css/style.css?v=6">
     <!-- Swiper CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-    <!-- Premium Liquid Background -->
-    <div class="liquid-bg"></div>
 
+<body>
     <!-- Intro Video Splash Screen -->
     <div id="splash-screen">
         <video id="intro-video" playsinline preload="auto"></video>
@@ -36,14 +35,18 @@
     <!-- Main Application -->
     <div id="app" style="display: none;">
         <!-- Toast & Modal Core -->
-        <div id="pirate-toast-container" style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:10000; pointer-events:none;"></div>
+        <div id="pirate-toast-container"
+            style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:10000; pointer-events:none;">
+        </div>
         <div id="pirate-modal-overlay" class="modal-overlay" style="z-index:10001;">
             <div class="modal-content" style="max-width:400px; text-align:center;">
                 <h2 id="pm-title" style="margin-bottom:15px; color:var(--primary-accent);"></h2>
                 <p id="pm-message" style="margin-bottom:25px; color:#ccc;"></p>
                 <div style="display:flex; gap:10px; justify-content:center;">
-                    <button id="pm-cancel" class="btn btn-info" style="font-size:0.9rem; padding:10px 20px;">Cancel</button>
-                    <button id="pm-confirm" class="btn btn-play" style="font-size:0.9rem; padding:10px 20px;">Confirm</button>
+                    <button id="pm-cancel" class="btn btn-info"
+                        style="font-size:0.9rem; padding:10px 20px;">Cancel</button>
+                    <button id="pm-confirm" class="btn btn-play"
+                        style="font-size:0.9rem; padding:10px 20px;">Confirm</button>
                 </div>
             </div>
         </div>
@@ -66,7 +69,8 @@
                 <div class="coin-badge tv-focusable" id="coin-badge" title="Daily Check-in">
                     <i class="fa fa-coins"></i> <span id="coin-balance">0 OP</span>
                 </div>
-                <i class="fa fa-sign-out tv-focusable" id="logout-btn" style="cursor:pointer; color:var(--text-muted);"></i>
+                <i class="fa fa-sign-out tv-focusable" id="logout-btn"
+                    style="cursor:pointer; color:var(--text-muted);"></i>
             </div>
         </nav>
 
@@ -87,456 +91,1219 @@
                 <button class="filter-btn" id="m-nav-anime">Anime</button>
             </div>
         </div>
-        <!-- Hero Section -->
-        <div class="hero" id="hero-section">
-            <div id="hero-video-container" style="position: absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:hidden;"></div>
-            <div class="hero-content" style="z-index: 10;">
-                <h1 id="hero-title" class="hero-netflix-title">Loading...</h1>
-                <div class="hero-genres" id="hero-genres-mobile">Action • Thriller • Drama</div>
-                <div class="hero-buttons">
-                    <button id="hero-play-btn" class="btn btn-netflix-play tv-focusable"><i class="fa fa-play text-black"></i> Play</button>
-                    <button id="add-list-btn-hero" class="btn btn-netflix-list tv-focusable"><i class="fa fa-plus"></i> My List</button>
+        <!-- HOME VIEW CONTAINER -->
+        <div id="home-view">
+            <!-- Hero Section -->
+            <div class="hero" id="hero-section">
+                <div id="hero-video-container"
+                    style="position: absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:hidden;">
                 </div>
-            </div>
-            <div class="hero-fade-bottom"></div>
-        </div>
-
-        <!-- Rows Container -->
-        <div class="rows-container">
-            <!-- Search Results Row (Hidden by default) -->
-            <div class="row" id="row-search-container" style="display: none;">
-                <h2 class="row-header">Search Results</h2>
-                <div class="swiper search-swiper">
-                    <div class="swiper-wrapper" id="search-row"></div>
-                </div>
-            </div>
-
-            <!-- History Row (New) -->
-            <div class="row" id="row-history-container" style="display:none">
-                <h2 class="row-header">Continue Watching</h2>
-                <div class="swiper history-swiper">
-                    <div class="swiper-wrapper" id="history-row"></div>
-                </div>
-            </div>
-
-            <!-- Watchlist Row (New) -->
-            <div class="row" id="row-watchlist-container" style="display:none">
-                <h2 class="row-header">My Watchlist</h2>
-                <div class="swiper watchlist-swiper">
-                    <div class="swiper-wrapper" id="watchlist-row"></div>
-                </div>
-            </div>
-
-            <!-- Netflix Styled Categories -->
-            <div class="row" id="row-trending-container">
-                <h2 class="row-header">Top 10 Movies / Trending Now</h2>
-                <div class="swiper trending-swiper">
-                    <div class="swiper-wrapper" id="trending-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-british-container">
-                <h2 class="row-header">British Films & Series</h2>
-                <div class="swiper british-swiper">
-                    <div class="swiper-wrapper" id="british-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-thriller-container">
-                <h2 class="row-header">Thriller Films</h2>
-                <div class="swiper thriller-swiper">
-                    <div class="swiper-wrapper" id="thriller-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-gems-container">
-                <h2 class="row-header">Gems for You</h2>
-                <div class="swiper gems-swiper">
-                    <div class="swiper-wrapper" id="gems-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-young-adult-container">
-                <h2 class="row-header">Young Adult Films & Series</h2>
-                <div class="swiper young-adult-swiper">
-                    <div class="swiper-wrapper" id="young-adult-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-comedy-container">
-                <h2 class="row-header">Comedy Films</h2>
-                <div class="swiper comedy-swiper">
-                    <div class="swiper-wrapper" id="comedy-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-real-life-container">
-                <h2 class="row-header">Films Based on Real Life</h2>
-                <div class="swiper real-life-swiper">
-                    <div class="swiper-wrapper" id="real-life-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-crime-dramas-container">
-                <h2 class="row-header">Relentless Crime Dramas</h2>
-                <div class="swiper crime-dramas-swiper">
-                    <div class="swiper-wrapper" id="crime-dramas-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-comedy-series-container">
-                <h2 class="row-header">Comedy Series</h2>
-                <div class="swiper comedy-series-swiper">
-                    <div class="swiper-wrapper" id="comedy-series-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-epic-realms-container">
-                <h2 class="row-header">Epic Realms, Mythic Quests</h2>
-                <div class="swiper epic-realms-swiper">
-                    <div class="swiper-wrapper" id="epic-realms-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-period-pieces-container">
-                <h2 class="row-header">Period Pieces</h2>
-                <div class="swiper period-pieces-swiper">
-                    <div class="swiper-wrapper" id="period-pieces-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-thriller-mystery-series-container">
-                <h2 class="row-header">Thriller & Mystery Series</h2>
-                <div class="swiper thriller-mystery-series-swiper">
-                    <div class="swiper-wrapper" id="thriller-mystery-series-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-books-container">
-                <h2 class="row-header">Films Based on Books</h2>
-                <div class="swiper books-swiper">
-                    <div class="swiper-wrapper" id="books-row"></div>
-                </div>
-            </div>
-
-            <div class="row" id="row-good-laugh-container">
-                <h2 class="row-header">Need a Good Laugh?</h2>
-                <div class="swiper good-laugh-swiper">
-                    <div class="swiper-wrapper" id="good-laugh-row"></div>
-                </div>
-            </div>
-
-            <!-- NEWLY REQUESTED ROWS -->
-            <div class="row" id="row-romantic-series-container" style="display: none;">
-            <h2 class="row-header">Romantic Series</h2>
-            <div class="swiper romantic-series-swiper">
-                <div class="swiper-wrapper" id="romantic-series-row"></div>
-            </div>
-        </div>
-            <div class="row" id="row-your-next-watch-container">
-                <h2 class="row-header">Your Next Watch</h2>
-                <div class="swiper your-next-watch-swiper">
-                    <div class="swiper-wrapper" id="your-next-watch-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-asian-films-container">
-                <h2 class="row-header">Asian Films & Series</h2>
-                <div class="swiper asian-films-swiper">
-                    <div class="swiper-wrapper" id="asian-films-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-top10-films-container">
-                <h2 class="row-header">Top 10 Films in Pakistan Today</h2>
-                <div class="swiper top10-films-swiper">
-                    <div class="swiper-wrapper" id="top10-films-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-scifi-fantasy-container">
-                <h2 class="row-header">Sci-Fi & Fantasy Series</h2>
-                <div class="swiper scifi-fantasy-swiper">
-                    <div class="swiper-wrapper" id="scifi-fantasy-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-love-these-container">
-                <h2 class="row-header">We think you'll love these</h2>
-                <div class="swiper love-these-swiper">
-                    <div class="swiper-wrapper" id="love-these-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-kdramas-container">
-                <h2 class="row-header">K-dramas</h2>
-                <div class="swiper kdramas-swiper">
-                    <div class="swiper-wrapper" id="kdramas-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-crowd-pleasers-container">
-                <h2 class="row-header">Crowd-pleasers</h2>
-                <div class="swiper crowd-pleasers-swiper">
-                    <div class="swiper-wrapper" id="crowd-pleasers-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-familiar-fav-container">
-                <h2 class="row-header">Familiar Favourite Series</h2>
-                <div class="swiper familiar-fav-swiper">
-                    <div class="swiper-wrapper" id="familiar-fav-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-top10-series-container">
-                <h2 class="row-header">Top 10 Series in Pakistan Today</h2>
-                <div class="swiper top10-series-swiper">
-                    <div class="swiper-wrapper" id="top10-series-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-romantic-films-container">
-                <h2 class="row-header">Romantic Films</h2>
-                <div class="swiper romantic-films-swiper">
-                    <div class="swiper-wrapper" id="romantic-films-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-weekend-container">
-                <h2 class="row-header">Watch In One Weekend</h2>
-                <div class="swiper weekend-swiper">
-                    <div class="swiper-wrapper" id="weekend-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-european-series-container">
-                <h2 class="row-header">European Series</h2>
-                <div class="swiper european-series-swiper">
-                    <div class="swiper-wrapper" id="european-series-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-emotional-series-container">
-                <h2 class="row-header">Emotional Series</h2>
-                <div class="swiper emotional-series-swiper">
-                    <div class="swiper-wrapper" id="emotional-series-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-new-on-netflix-container">
-                <h2 class="row-header">New on OnixPlay+</h2>
-                <div class="swiper new-on-netflix-swiper">
-                    <div class="swiper-wrapper" id="new-on-netflix-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-bingeworthy-container">
-                <h2 class="row-header">Bingeworthy Series</h2>
-                <div class="swiper bingeworthy-swiper">
-                    <div class="swiper-wrapper" id="bingeworthy-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-blockbuster-container">
-                <h2 class="row-header">Blockbuster Films</h2>
-                <div class="swiper blockbuster-swiper">
-                    <div class="swiper-wrapper" id="blockbuster-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-action-getin-container">
-                <h2 class="row-header">Get In on the Action</h2>
-                <div class="swiper action-getin-swiper">
-                    <div class="swiper-wrapper" id="action-getin-row"></div>
-                </div>
-            </div>
-            <div class="row" id="row-made-in-india-container">
-                <h2 class="row-header">Made in India</h2>
-                <div class="swiper made-in-india-swiper">
-                    <div class="swiper-wrapper" id="made-in-india-row"></div>
-                </div>
-            </div>
-
-            <!-- SEARCH PAGE -->
-            <div id="new-search-page" style="display: none; padding-top: 70px; color: white; min-height: 100vh;">
-                <div class="netflix-search-header">
-                    <i class="fa fa-arrow-left" id="close-search-btn" style="font-size: 1.2rem; cursor: pointer;"></i>
-                    <div class="netflix-search-box">
-                        <i class="fa fa-search"></i>
-                        <input type="text" id="netflix-search-input" placeholder="Search series, films, games...">
-                        <i class="fa fa-microphone"></i>
+                <div class="hero-content" style="z-index: 10;">
+                    <h1 id="hero-title" class="hero-netflix-title">Loading...</h1>
+                    <div class="hero-genres" id="hero-genres-mobile">Action • Thriller • Drama</div>
+                    <div class="hero-buttons">
+                        <button id="hero-play-btn" class="btn btn-netflix-play tv-focusable"><i
+                                class="fa fa-play text-black"></i> Play</button>
+                        <button id="add-list-btn-hero" class="btn btn-netflix-list tv-focusable"><i
+                                class="fa fa-plus"></i> My List</button>
                     </div>
                 </div>
-                <div class="search-recommendations">
-                    <h3 style="font-size: 1.1rem; margin-bottom: 15px; font-weight: 700;">Recommended series & films</h3>
-                    <div id="recommended-search-list" class="vertical-list">
+                <div class="hero-fade-bottom"></div>
+            </div>
+
+            <!-- Rows Container -->
+            <div class="rows-container">
+
+
+                <!-- History Row (New) -->
+                <div class="row" id="row-history-container" style="display:none">
+                    <h2 class="row-header">Continue Watching</h2>
+                    <div class="swiper history-swiper">
+                        <div class="swiper-wrapper" id="history-row"></div>
+                    </div>
+                </div>
+
+                <!-- Watchlist Row (New) -->
+                <div class="row" id="row-watchlist-container" style="display:none">
+                    <h2 class="row-header">My Watchlist</h2>
+                    <div class="swiper watchlist-swiper">
+                        <div class="swiper-wrapper" id="watchlist-row"></div>
+                    </div>
+                </div>
+
+                <!-- Netflix Styled Categories -->
+                <div class="row" id="row-trending-container">
+                    <h2 class="row-header">Top 10 Movies / Trending Now</h2>
+                    <div class="swiper trending-swiper">
+                        <div class="swiper-wrapper" id="trending-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-british-container">
+                    <h2 class="row-header">British Films & Series</h2>
+                    <div class="swiper british-swiper">
+                        <div class="swiper-wrapper" id="british-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-thriller-container">
+                    <h2 class="row-header">Thriller Films</h2>
+                    <div class="swiper thriller-swiper">
+                        <div class="swiper-wrapper" id="thriller-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-gems-container">
+                    <h2 class="row-header">Gems for You</h2>
+                    <div class="swiper gems-swiper">
+                        <div class="swiper-wrapper" id="gems-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-young-adult-container">
+                    <h2 class="row-header">Young Adult Films & Series</h2>
+                    <div class="swiper young-adult-swiper">
+                        <div class="swiper-wrapper" id="young-adult-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-comedy-container">
+                    <h2 class="row-header">Comedy Films</h2>
+                    <div class="swiper comedy-swiper">
+                        <div class="swiper-wrapper" id="comedy-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-real-life-container">
+                    <h2 class="row-header">Films Based on Real Life</h2>
+                    <div class="swiper real-life-swiper">
+                        <div class="swiper-wrapper" id="real-life-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-crime-dramas-container">
+                    <h2 class="row-header">Relentless Crime Dramas</h2>
+                    <div class="swiper crime-dramas-swiper">
+                        <div class="swiper-wrapper" id="crime-dramas-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-comedy-series-container">
+                    <h2 class="row-header">Comedy Series</h2>
+                    <div class="swiper comedy-series-swiper">
+                        <div class="swiper-wrapper" id="comedy-series-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-epic-realms-container">
+                    <h2 class="row-header">Epic Realms, Mythic Quests</h2>
+                    <div class="swiper epic-realms-swiper">
+                        <div class="swiper-wrapper" id="epic-realms-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-period-pieces-container">
+                    <h2 class="row-header">Period Pieces</h2>
+                    <div class="swiper period-pieces-swiper">
+                        <div class="swiper-wrapper" id="period-pieces-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-thriller-mystery-series-container">
+                    <h2 class="row-header">Thriller & Mystery Series</h2>
+                    <div class="swiper thriller-mystery-series-swiper">
+                        <div class="swiper-wrapper" id="thriller-mystery-series-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-books-container">
+                    <h2 class="row-header">Films Based on Books</h2>
+                    <div class="swiper books-swiper">
+                        <div class="swiper-wrapper" id="books-row"></div>
+                    </div>
+                </div>
+
+                <div class="row" id="row-good-laugh-container">
+                    <h2 class="row-header">Need a Good Laugh?</h2>
+                    <div class="swiper good-laugh-swiper">
+                        <div class="swiper-wrapper" id="good-laugh-row"></div>
+                    </div>
+                </div>
+
+                <!-- NEWLY REQUESTED ROWS -->
+                <div class="row" id="row-romantic-series-container" style="display: none;">
+                    <h2 class="row-header">Romantic Series</h2>
+                    <div class="swiper romantic-series-swiper">
+                        <div class="swiper-wrapper" id="romantic-series-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-your-next-watch-container">
+                    <h2 class="row-header">Your Next Watch</h2>
+                    <div class="swiper your-next-watch-swiper">
+                        <div class="swiper-wrapper" id="your-next-watch-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-asian-films-container">
+                    <h2 class="row-header">Asian Films & Series</h2>
+                    <div class="swiper asian-films-swiper">
+                        <div class="swiper-wrapper" id="asian-films-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-top10-films-container">
+                    <h2 class="row-header">Top 10 Films in Pakistan Today</h2>
+                    <div class="swiper top10-films-swiper">
+                        <div class="swiper-wrapper" id="top10-films-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-scifi-fantasy-container">
+                    <h2 class="row-header">Sci-Fi & Fantasy Series</h2>
+                    <div class="swiper scifi-fantasy-swiper">
+                        <div class="swiper-wrapper" id="scifi-fantasy-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-love-these-container">
+                    <h2 class="row-header">We think you'll love these</h2>
+                    <div class="swiper love-these-swiper">
+                        <div class="swiper-wrapper" id="love-these-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-kdramas-container">
+                    <h2 class="row-header">K-dramas</h2>
+                    <div class="swiper kdramas-swiper">
+                        <div class="swiper-wrapper" id="kdramas-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-crowd-pleasers-container">
+                    <h2 class="row-header">Crowd-pleasers</h2>
+                    <div class="swiper crowd-pleasers-swiper">
+                        <div class="swiper-wrapper" id="crowd-pleasers-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-familiar-fav-container">
+                    <h2 class="row-header">Familiar Favourite Series</h2>
+                    <div class="swiper familiar-fav-swiper">
+                        <div class="swiper-wrapper" id="familiar-fav-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-top10-series-container">
+                    <h2 class="row-header">Top 10 Series in Pakistan Today</h2>
+                    <div class="swiper top10-series-swiper">
+                        <div class="swiper-wrapper" id="top10-series-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-romantic-films-container">
+                    <h2 class="row-header">Romantic Films</h2>
+                    <div class="swiper romantic-films-swiper">
+                        <div class="swiper-wrapper" id="romantic-films-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-weekend-container">
+                    <h2 class="row-header">Watch In One Weekend</h2>
+                    <div class="swiper weekend-swiper">
+                        <div class="swiper-wrapper" id="weekend-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-european-series-container">
+                    <h2 class="row-header">European Series</h2>
+                    <div class="swiper european-series-swiper">
+                        <div class="swiper-wrapper" id="european-series-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-emotional-series-container">
+                    <h2 class="row-header">Emotional Series</h2>
+                    <div class="swiper emotional-series-swiper">
+                        <div class="swiper-wrapper" id="emotional-series-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-new-on-netflix-container">
+                    <h2 class="row-header">New on OnixPlay+</h2>
+                    <div class="swiper new-on-netflix-swiper">
+                        <div class="swiper-wrapper" id="new-on-netflix-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-bingeworthy-container">
+                    <h2 class="row-header">Bingeworthy Series</h2>
+                    <div class="swiper bingeworthy-swiper">
+                        <div class="swiper-wrapper" id="bingeworthy-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-blockbuster-container">
+                    <h2 class="row-header">Blockbuster Films</h2>
+                    <div class="swiper blockbuster-swiper">
+                        <div class="swiper-wrapper" id="blockbuster-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-action-getin-container">
+                    <h2 class="row-header">Get In on the Action</h2>
+                    <div class="swiper action-getin-swiper">
+                        <div class="swiper-wrapper" id="action-getin-row"></div>
+                    </div>
+                </div>
+                <div class="row" id="row-made-in-india-container">
+                    <h2 class="row-header">Made in India</h2>
+                    <div class="swiper made-in-india-swiper">
+                        <div class="swiper-wrapper" id="made-in-india-row"></div>
+                    </div>
+                </div>
+            </div> <!-- End of rows-container -->
+        </div> <!-- End of home-view -->
+
+        <!-- SEARCH PAGE -->
+        <div id="new-search-page" style="display: none; padding-top: 70px; color: white; min-height: 100vh;">
+            <div class="netflix-search-header">
+                <i class="fa fa-arrow-left" id="close-search-btn" style="font-size: 1.2rem; cursor: pointer;"></i>
+                <div class="netflix-search-box">
+                    <i class="fa fa-search"></i>
+                    <input type="text" id="netflix-search-input" placeholder="Search series, films, games...">
+                    <i class="fa fa-microphone"></i>
+                </div>
+            </div>
+            <div class="search-recommendations">
+                <h3 style="font-size: 1.1rem; margin-bottom: 15px; font-weight: 700;">Recommended series & films</h3>
+                <div id="recommended-search-list" class="vertical-list">
+                    <!-- Items injected here -->
+                </div>
+            </div>
+        </div>
+        <!-- MY OP ACCOUNT PAGE (RE-DESIGNED) -->
+        <div id="my-op-account-page" style="display: none; background: #000; min-height: 100vh; padding-bottom: 100px;">
+
+            <!-- My OP Header Bar -->
+            <div class="profile-header glass-header">
+                <span style="font-size: 1.4rem; font-weight: 800;">My OnixPlay+</span>
+                <div style="display: flex; gap: 20px; font-size: 1.2rem;">
+                    <i class="fa fa-search" onclick="switchView('search')" style="cursor:pointer;"></i>
+                    <i class="fa fa-bars" id="myop-menu-trigger" style="cursor:pointer;"></i>
+                </div>
+            </div>
+
+            <!-- Profile Selection -->
+            <div class="myop-profile-container">
+                <div class="myop-avatar-wrapper">
+                    <div class="avatar-placeholder main-av"><i class="fa fa-user"></i></div>
+                </div>
+                <h1 class="myop-display-name">Onix Astral Studio <i class="fa fa-chevron-down"></i></h1>
+            </div>
+
+            <!-- Notification Card -->
+            <div class="myop-dashboard-card notification-card">
+                <div class="card-header">
+                    <div class="header-left">
+                        <i class="fa fa-bell"></i>
+                        <span>Notifications</span>
+                    </div>
+                    <div class="header-right">
+                        <div class="notification-count">1</div>
+                        <i class="fa fa-chevron-right"></i>
+                    </div>
+                </div>
+                <div class="card-body" id="notifications-list">
+                    <!-- Dynamically Populated via app.js -->
+                    <div style="padding: 10px 0; text-align: center; color: #555; font-size: 0.8rem;">
+                        No new notifications
+                    </div>
+                </div>
+            </div>
+
+            <!-- Downloads Card -->
+            <div class="myop-dashboard-card download-card">
+                <div class="card-header">
+                    <div class="header-left">
+                        <i class="fa fa-download"></i>
+                        <span>Downloads</span>
+                    </div>
+                    <i class="fa fa-chevron-right"></i>
+                </div>
+                <div class="card-empty-state">
+                    <div class="empty-icon-circle">
+                        <i class="fa fa-download"></i>
+                    </div>
+                    <p>Series and films that you download appear here.</p>
+                </div>
+            </div>
+
+
+            <!-- Watch History Row -->
+            <div class="myop-list-section">
+                <div class="section-header">
+                    <h2>Watch History</h2>
+                </div>
+                <div class="myop-row-container" id="row-history-myop">
+                    <!-- Dynamically Populated -->
+                </div>
+            </div>
+        </div>
+
+        <!-- EDIT PROFILE VIEW -->
+        <div id="edit-profile-view" style="display: none; background: #000; min-height: 100vh; color: #fff;">
+            <div class="profile-header">
+                <i class="fa fa-arrow-left" onclick="switchView('my_op')" style="cursor:pointer;"></i>
+                <span>Edit Profile</span>
+                <button class="profile-save-btn" id="save-profile-btn">Done</button>
+            </div>
+
+            <div class="edit-profile-avatar-section">
+                <div class="avatar-edit-container">
+                    <div class="avatar-placeholder" id="edit-avatar-placeholder"><i class="fa fa-user"></i></div>
+                    <img id="edit-avatar-img" src="" alt="Profile" style="display:none;">
+                    <div class="avatar-edit-badge" onclick="toggleAvatarSelection()"><i class="fa fa-pencil-alt"></i>
+                    </div>
+
+                    <!-- Avatar Selection Overlay -->
+                    <div id="avatar-selection-grid" class="avatar-grid-overlay" style="display:none;">
+                        <div class="avatar-option"
+                            onclick="selectAvatar('Avatars/WhatsApp Image 2026-04-20 at 11.20.29 PM.jpeg', this)"><img
+                                src="Avatars/WhatsApp Image 2026-04-20 at 11.20.29 PM.jpeg" class="avatar-circle-img">
+                        </div>
+                        <div class="avatar-option"
+                            onclick="selectAvatar('Avatars/WhatsApp Image 2026-04-20 at 11.20.29 PM (1).jpeg', this)">
+                            <img src="Avatars/WhatsApp Image 2026-04-20 at 11.20.29 PM (1).jpeg"
+                                class="avatar-circle-img"></div>
+                        <div class="avatar-option"
+                            onclick="selectAvatar('Avatars/WhatsApp Image 2026-04-20 at 11.20.30 PM.jpeg', this)"><img
+                                src="Avatars/WhatsApp Image 2026-04-20 at 11.20.30 PM.jpeg" class="avatar-circle-img">
+                        </div>
+                        <div class="avatar-option"
+                            onclick="selectAvatar('Avatars/WhatsApp Image 2026-04-21 at 5.06.57 AM.jpeg', this)"><img
+                                src="Avatars/WhatsApp Image 2026-04-21 at 5.06.57 AM.jpeg" class="avatar-circle-img">
+                        </div>
+                        <div class="avatar-option"
+                            onclick="selectAvatar('Avatars/WhatsApp Image 2026-04-21 at 5.08.07 AM.jpeg', this)"><img
+                                src="Avatars/WhatsApp Image 2026-04-21 at 5.08.07 AM.jpeg" class="avatar-circle-img">
+                        </div>
+                    </div>
+                </div>
+                <div class="profile-input-container">
+                    <input type="text" id="profile-name-input" placeholder="Profile Name" value="Onix Astral Studio">
+                    <div class="input-underline"></div>
+                </div>
+            </div>
+
+            <div class="settings-list">
+                <div class="settings-item" onclick="switchView('viewing_restrictions')">
+                    <div class="st-left">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <div>
+                            <div class="st-title">Viewing restrictions</div>
+                            <div class="st-sub" id="current-restriction">No restrictions</div>
+                        </div>
+                    </div>
+                    <i class="fa fa-chevron-right"></i>
+                </div>
+
+                <div class="settings-item" onclick="switchView('language_settings')">
+                    <div class="st-left">
+                        <i class="fa fa-language"></i>
+                        <div>
+                            <div class="st-title">Display language</div>
+                            <div class="st-sub" id="current-language-display">English</div>
+                        </div>
+                    </div>
+                    <i class="fa fa-chevron-right"></i>
+                </div>
+
+                <div class="settings-item-toggle">
+                    <div class="st-left">
+                        <i class="fa fa-forward"></i>
+                        <div>
+                            <div class="st-title">Autoplay next episode</div>
+                            <div class="st-sub">On all devices</div>
+                        </div>
+                    </div>
+                    <label class="ios-switch">
+                        <input type="checkbox" id="autoplay-next-toggle" checked>
+                        <span class="ios-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEWING RESTRICTIONS VIEW -->
+        <div id="viewing-restrictions-view" style="display: none; background: #000; min-height: 100vh; color: #fff;">
+            <div class="profile-header">
+                <i class="fa fa-arrow-left" onclick="switchView('edit_profile')" style="cursor:pointer;"></i>
+                <span>Viewing Restrictions</span>
+                <button class="profile-save-btn" onclick="switchView('edit_profile')">Done</button>
+            </div>
+            <div class="restriction-content">
+                <div class="restriction-card">
+                    <div class="rc-header">
+                        <h3>Family Mode</h3>
+                        <label class="ios-switch">
+                            <input type="checkbox" id="family-mode-toggle">
+                            <span class="ios-slider"></span>
+                        </label>
+                    </div>
+                    <p>When enabled, this profile will only show movies and TV shows suitable for all ages. Explicit
+                        content and mature themes will be hidden.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- LANGUAGE SETTINGS VIEW -->
+        <div id="language-settings-view" style="display: none; background: #000; min-height: 100vh; color: #fff;">
+            <div class="profile-header">
+                <i class="fa fa-arrow-left" onclick="switchView('edit_profile')" style="cursor:pointer;"></i>
+                <span>Display Language</span>
+                <button class="profile-save-btn" onclick="switchView('edit_profile')">Done</button>
+            </div>
+            <div class="language-list" id="language-options-container">
+                <!-- Languages added via JS -->
+            </div>
+        </div>
+
+        <!-- BOTTOM SHEET MENU (3 Dots) -->
+        <div id="myop-bottom-sheet" class="bottom-sheet-overlay">
+            <div class="bottom-sheet-content">
+                <div class="sheet-item" onclick="switchView('edit_profile')"><i class="fa fa-pencil-alt sheet-icon"></i>
+                    Edit Profile</div>
+                <div class="sheet-item" onclick="switchView('app_settings')"><i class="fa fa-cog sheet-icon"></i> App
+                    Settings</div>
+                <div class="sheet-item" onclick="switchView('account_dashboard', 'my_op')"><i
+                        class="fa fa-user sheet-icon"></i> Account</div>
+                <div class="sheet-item" onclick="switchView('help')"><i class="fa fa-question-circle sheet-icon"></i>
+                    Help</div>
+                <div class="sheet-item text-danger" id="sign-out-btn"><i class="fa fa-sign-out-alt sheet-icon"></i> Sign
+                    Out</div>
+                <div class="sheet-version">Version: 1.0.0 build 1</div>
+            </div>
+        </div>
+
+        <!-- ANIME SECTION (Hidden by default) -->
+        <div id="anime-sections" style="display: none;">
+            <div class="row" id="row-anime-trending-container">
+                <h2 class="row-header anime">Trending Anime</h2>
+                <div class="swiper anime-trending-swiper">
+                    <div class="swiper-wrapper" id="anime-trending-row"></div>
+                </div>
+            </div>
+            <div class="row" id="row-anime-hindi-container">
+                <h2 class="row-header anime">Hindi Dubbed Anime</h2>
+                <div class="swiper anime-hindi-swiper">
+                    <div class="swiper-wrapper" id="anime-hindi-row"></div>
+                </div>
+            </div>
+            <div class="row" id="row-anime-popular-container">
+                <h2 class="row-header anime">Popular Anime Movies</h2>
+                <div class="swiper anime-popular-swiper">
+                    <div class="swiper-wrapper" id="anime-popular-row"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SPOTLIGHT (NEWS) PAGE -->
+        <div id="spotlight-page" style="display: none; color: white; min-height: 100vh;">
+            <!-- Anti-Gravity Banner -->
+            <div id="anti-gravity-banner">
+                <div class="ag-banner-bg"></div>
+                <div class="ag-banner-content">
+                    <img src="Assets/Images/moviepirate_icon.png" class="ag-picks-logo" alt="OnixPlay+ Picks">
+                    <div class="ag-accent-particles"></div>
+                </div>
+            </div>
+
+            <div class="spotlight-header">
+                <h1 class="spotlight-title">Spotlight</h1>
+                <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px;" id="spotlight-tabs">
+                    <button class="filter-btn active" data-tab="coming-soon"><span>Upcoming 🍿</span></button>
+                    <button class="filter-btn" data-tab="watching"><span>Everyone's Watching 🔥</span></button>
+                    <button class="filter-btn" data-tab="top-10"><span class="top10-badge-style">Top 10
+                            🔟</span></button>
+                </div>
+            </div>
+
+            <div id="spotlight-content">
+                <!-- COMING SOON VIEW -->
+                <div id="tab-coming-soon" class="spotlight-tab-content">
+                    <div class="coming-soon-list" id="coming-soon-container">
                         <!-- Items injected here -->
                     </div>
                 </div>
-            </div>
-            
-            <!-- MY OP ACCOUNT PAGE -->
-            <div id="my-op-account-page" style="display: none; padding-top: 0; color: white; min-height: 100vh; padding-bottom: 80px;">
-                
-                <!-- My OP Header Bar -->
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 55px 4% 10px; background: linear-gradient(to bottom, rgba(5,5,5,0.95), transparent);">
-                    <span style="font-size: 1.4rem; font-weight: 800;">My OnixPlay+</span>
-                    <div style="display: flex; gap: 20px; font-size: 1.2rem;">
-                        <i class="fa fa-search" onclick="switchView('search')" style="cursor:pointer;"></i>
-                        <i class="fa fa-bars" id="myop-menu-trigger" style="cursor:pointer;"></i>
-                    </div>
-                </div>
 
-                <!-- Profile Section -->
-                <div style="display: flex; flex-direction: column; align-items: center; padding: 20px 4% 30px; background: linear-gradient(to bottom, rgba(5,5,5,0.7), transparent);">
-                    <!-- Avatar Placeholder (can be replaced with user photo) -->
-                    <div id="myop-avatar-wrap" style="width: 80px; height: 80px; border-radius: 10px; background: linear-gradient(135deg, #1a7a4a, #39ff14); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 2.5rem; box-shadow: 0 0 20px rgba(57,255,20,0.3);">
-                        <i class="fa fa-user" style="color: #fff;"></i>
-                    </div>
-                    <div class="myop-name" style="font-size: 1.3rem; font-weight: 700;">OnixCrew Member <i class="fa fa-chevron-down" style="font-size: 0.8rem; margin-left: 5px;"></i></div>
-                    <!-- Quick action buttons below profile -->
-                    <div style="display: flex; gap: 20px; margin-top: 20px;">
-                        <div onclick="switchView('search')" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer;">
-                            <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
-                                <i class="fa fa-search"></i>
-                            </div>
-                            <span style="font-size: 0.75rem; color: #aaa;">Search</span>
-                        </div>
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer;">
-                            <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
-                                <i class="fa fa-download"></i>
-                            </div>
-                            <span style="font-size: 0.75rem; color: #aaa;">Downloads</span>
+                <!-- EVERYONE WATCHING VIEW -->
+                <div id="tab-watching" class="spotlight-tab-content" style="display: none;">
+                    <div class="row" id="row-watching-container">
+                        <h2 class="row-header">Trending Across Global</h2>
+                        <div class="swiper watching-swiper">
+                            <div class="swiper-wrapper" id="watching-row"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- My List Row -->
-                <div class="row" style="margin-top: 10px;" id="row-my-op-list-container">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 4%;">
-                        <h2 class="row-header" style="margin:0;">My List</h2>
-                        <span style="font-size:0.9rem; font-weight:600; cursor:pointer;">See All <i class="fa fa-chevron-right" style="font-size:0.7rem;"></i></span>
+                <!-- TOP 10 VIEW -->
+                <div id="tab-top-10" class="spotlight-tab-content" style="display: none;">
+                    <div class="ranking-row">
+                        <h2 class="row-header" style="border-left-color: var(--secondary-accent);">Top 10 Movies Today
+                        </h2>
+                        <div style="display: flex; gap: 25px; overflow-x: auto; padding: 20px 0;"
+                            id="top-10-movies-container"></div>
                     </div>
-                    <div class="swiper myop-list-swiper" style="margin-top: 10px;">
-                        <div class="swiper-wrapper" id="myop-list-row"></div>
+                    <div class="ranking-row">
+                        <h2 class="row-header" style="border-left-color: var(--primary-accent);">Top 10 Series Today
+                        </h2>
+                        <div style="display: flex; gap: 25px; overflow-x: auto; padding: 20px 0;"
+                            id="top-10-tv-container"></div>
                     </div>
-                </div>
-                
-                <div class="row" style="margin-top: 20px;">
-                    <h2 class="row-header">Continue Watching</h2>
-                    <div class="swiper trailers-watched-swiper">
-                        <div class="swiper-wrapper" id="trailers-watched-row"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NEW & HOT PAGE -->
-            <div id="new-hot-page" style="display: none; padding-top: 55px; color: white; min-height: 100vh;">
-                <!-- Header Title -->
-                <div style="padding: 10px 4% 5px; background: #050505; position: sticky; top: 0; z-index: 100;">
-                    <h1 style="font-size: 1.6rem; font-weight: 800;">New & Hot</h1>
-                </div>
-
-                <!-- Sticky Filter Bar -->
-                <div class="new-hot-filters" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px 4%; background: #050505; position: sticky; top: 50px; z-index: 99;">
-                    <button class="nh-filter-btn active glass-shine-effect" data-type="coming_soon"><i class="fa fa-calendar-alt"></i> Coming Soon</button>
-                    <button class="nh-filter-btn glass-shine-effect" data-type="everyone_watching"><i class="fa fa-fire"></i> Everyone's Watching</button>
-                    <button class="nh-filter-btn glass-shine-effect" data-type="top10_series"><i class="fa fa-tv"></i> Top 10 Series</button>
-                    <button class="nh-filter-btn glass-shine-effect" data-type="top10_movies"><i class="fa fa-film"></i> Top 10 Films</button>
-                    <button class="nh-filter-btn glass-shine-effect" data-type="top10_anime"><i class="fa fa-ghost"></i> Top 10 Anime</button>
-                </div>
-
-                <!-- Content Feed -->
-                <div id="new-hot-feed" class="new-hot-feed">
-                    <!-- Items will be injected here -->
-                </div>
-            </div>
-
-            <!-- BOTTOM SHEET MENU (3 Dots) -->
-            <div id="myop-bottom-sheet" class="bottom-sheet-overlay">
-                <div class="bottom-sheet-content">
-                    <div class="sheet-item"><i class="fa fa-pencil-alt sheet-icon"></i> Manage Profiles</div>
-                    <div class="sheet-item"><i class="fa fa-cog sheet-icon"></i> App Settings</div>
-                    <div class="sheet-item"><i class="fa fa-user sheet-icon"></i> Account</div>
-                    <div class="sheet-item"><i class="fa fa-question-circle sheet-icon"></i> Help</div>
-                    <div class="sheet-item text-danger"><i class="fa fa-sign-out-alt sheet-icon"></i> Sign Out</div>
-                    <div class="sheet-version">Version: 1.0.0 build 1</div>
-                </div>
-            </div>
-
-            <!-- ANIME SECTION (Hidden by default) -->
-            <div id="anime-sections" style="display: none;">
-                <div class="row" id="row-anime-trending-container">
-                    <h2 class="row-header anime">Trending Anime</h2>
-                    <div class="swiper anime-trending-swiper">
-                        <div class="swiper-wrapper" id="anime-trending-row"></div>
-                    </div>
-                </div>
-                <div class="row" id="row-anime-hindi-container">
-                    <h2 class="row-header anime">Hindi Dubbed Anime</h2>
-                    <div class="swiper anime-hindi-swiper">
-                        <div class="swiper-wrapper" id="anime-hindi-row"></div>
-                    </div>
-                </div>
-                <div class="row" id="row-anime-popular-container">
-                    <h2 class="row-header anime">Popular Anime Movies</h2>
-                    <div class="swiper anime-popular-swiper">
-                        <div class="swiper-wrapper" id="anime-popular-row"></div>
+                    <div class="ranking-row">
+                        <h2 class="row-header" style="border-left-color: #ff00ff;">Top 10 Anime Today</h2>
+                        <div style="display: flex; gap: 25px; overflow-x: auto; padding: 20px 0;"
+                            id="top-10-anime-container"></div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Wallet Modal -->
-        <div class="modal-overlay" id="wallet-modal">
-            <div class="modal-content">
-                <span class="modal-close" id="close-wallet">&times;</span>
-                <div class="wallet-header">
-                    <h2>Pirate Wallet</h2>
-                    <p>Current Balance</p>
-                    <div class="wallet-balance" id="modal-coin-balance">0 OP</div>
+    <!-- Wallet Modal -->
+    <div class="modal-overlay" id="wallet-modal">
+        <div class="modal-content">
+            <span class="modal-close" id="close-wallet">&times;</span>
+            <div class="wallet-header">
+                <h2>Pirate Wallet</h2>
+                <p>Current Balance</p>
+                <div class="wallet-balance" id="modal-coin-balance">0 OP</div>
+            </div>
+
+            <div class="daily-checkin-section">
+                <p>Claim your daily pirates treasure!</p>
+                <button class="btn btn-play" id="daily-checkin-btn" style="margin: 15px auto; width: auto;">
+                    <i class="fa fa-gift"></i> Daily Check-in (+3 Coins)
+                </button>
+            </div>
+
+            <h3 style="margin-bottom: 15px;">Subscription Plans</h3>
+            <div class="plans-container">
+                <div class="plan-card tv-focusable" data-days="2" data-cost="12">
+                    <div class="plan-days">2 Days</div>
+                    <div class="plan-title">Trial</div>
+                    <div class="plan-cost">12 Coins</div>
                 </div>
-
-                <div class="daily-checkin-section">
-                    <p>Claim your daily pirates treasure!</p>
-                    <button class="btn btn-play" id="daily-checkin-btn" style="margin: 15px auto; width: auto;">
-                        <i class="fa fa-gift"></i> Daily Check-in (+3 Coins)
-                    </button>
+                <div class="plan-card tv-focusable" data-days="7" data-cost="30">
+                    <div class="plan-days">7 Days</div>
+                    <div class="plan-title">Warrior</div>
+                    <div class="plan-cost">30 Coins</div>
                 </div>
+                <div class="plan-card tv-focusable" data-days="30" data-cost="80">
+                    <div class="plan-days">30 Days</div>
+                    <div class="plan-title">Pirate King</div>
+                    <div class="plan-cost">80 Coins</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <h3 style="margin-bottom: 15px;">Subscription Plans</h3>
-                <div class="plans-container">
-                    <div class="plan-card tv-focusable" data-days="2" data-cost="12">
-                        <div class="plan-days">2 Days</div>
-                        <div class="plan-title">Trial</div>
-                        <div class="plan-cost">12 Coins</div>
+    <!-- APP SETTINGS VIEW (Glassmorphism) -->
+    <div id="app-settings-view" style="display: none; background: #000; min-height: 100vh; color: #fff;">
+        <div class="profile-header glass-header">
+            <i class="fa fa-arrow-left" onclick="switchView('my_op')" style="cursor:pointer;"></i>
+            <span>App Settings</span>
+        </div>
+
+        <div class="settings-scroll-container">
+            <!-- Video Playback -->
+            <div class="settings-group">
+                <h3 class="group-label">Video Playback</h3>
+                <div class="glass-card">
+                    <div class="settings-item-compact">
+                        <div class="st-left">
+                            <i class="fa fa-signal"></i>
+                            <div>
+                                <div class="st-title">Mobile Data Usage</div>
+                                <div class="st-sub">Automatic</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="plan-card tv-focusable" data-days="7" data-cost="30">
-                        <div class="plan-days">7 Days</div>
-                        <div class="plan-title">Warrior</div>
-                        <div class="plan-cost">30 Coins</div>
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="settings-group">
+                <h3 class="group-label">Notifications</h3>
+                <div class="glass-card">
+                    <div class="settings-item-toggle">
+                        <div class="st-left">
+                            <i class="fa fa-bell"></i>
+                            <div>
+                                <div class="st-title">Allow notifications</div>
+                                <div class="st-sub">Customise in Settings → Notifications</div>
+                            </div>
+                        </div>
+                        <label class="ios-switch">
+                            <input type="checkbox" id="settings-notif-toggle" checked>
+                            <span class="ios-slider"></span>
+                        </label>
                     </div>
-                    <div class="plan-card tv-focusable" data-days="30" data-cost="80">
-                        <div class="plan-days">30 Days</div>
-                        <div class="plan-title">Pirate King</div>
-                        <div class="plan-cost">80 Coins</div>
+                </div>
+            </div>
+
+            <!-- Downloads -->
+            <div class="settings-group">
+                <h3 class="group-label">Downloads</h3>
+                <div class="glass-card no-padding">
+                    <div class="settings-item-inner toggle">
+                        <span>Wi-Fi Only</span>
+                        <label class="ios-switch">
+                            <input type="checkbox" checked>
+                            <span class="ios-slider"></span>
+                        </label>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="settings-item-inner">
+                        <span>Smart Downloads</span>
+                        <i class="fa fa-chevron-right st-chevron"></i>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="settings-item-inner">
+                        <div>
+                            <div class="st-title">Download Video Quality</div>
+                            <div class="st-sub">Standard</div>
+                        </div>
+                        <i class="fa fa-chevron-right st-chevron"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About -->
+            <div class="settings-group">
+                <h3 class="group-label">About</h3>
+                <div class="glass-card">
+                    <div class="device-info-box">
+                        <i class="fa fa-mobile-alt"></i>
+                        <div>
+                            <div class="st-title">Device</div>
+                            <div id="device-info-text" class="st-sub">Detecting...</div>
+                        </div>
+                    </div>
+                    <div class="divider" style="margin: 15px 0;"></div>
+                    <div class="account-info-box clickable" onclick="switchView('account_dashboard', 'app_settings')"
+                        style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <i class="fa fa-user-circle"></i>
+                            <div>
+                                <div class="st-title">Account</div>
+                                <div id="settings-user-email" class="st-sub">Loading...</div>
+                            </div>
+                        </div>
+                        <i class="fa fa-chevron-right st-chevron"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diagnostics -->
+            <div class="settings-group">
+                <h3 class="group-label">Diagnostics</h3>
+                <div class="glass-card no-padding">
+                    <div class="settings-item-inner clickable" onclick="switchView('internet_diagnostics')">
+                        <div class="st-left">
+                            <i class="fa fa-wifi"></i>
+                            <span>Check network</span>
+                        </div>
+                        <i class="fa fa-chevron-right st-chevron"></i>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="settings-item-inner clickable" onclick="switchView('speed_test')">
+                        <div class="st-left">
+                            <i class="fa fa-tachometer-alt"></i>
+                            <span>Internet speed test</span>
+                        </div>
+                        <i class="fa fa-chevron-right st-chevron"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legal -->
+            <div class="settings-group">
+                <h3 class="group-label">Legal</h3>
+                <div class="glass-card no-padding">
+                    <div class="settings-item-inner clickable">
+                        <div class="st-left">
+                            <i class="fa fa-file-alt"></i>
+                            <span>Open Source Licences</span>
+                        </div>
+                        <i class="fa fa-chevron-right st-chevron"></i>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="settings-item-inner clickable">
+                        <div class="st-left">
+                            <i class="fa fa-shield-alt"></i>
+                            <span>Privacy</span>
+                        </div>
+                        <i class="fa fa-chevron-right st-chevron"></i>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="settings-item-inner clickable">
+                        <div class="st-left">
+                            <i class="fa fa-cookie"></i>
+                            <span>Cookie Preferences</span>
+                        </div>
+                        <i class="fa fa-chevron-right st-chevron"></i>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="settings-item-inner clickable">
+                        <div class="st-left">
+                            <i class="fa fa-ad"></i>
+                            <span>Advert choices</span>
+                        </div>
+                        <i class="fa fa-chevron-right st-chevron"></i>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="settings-item-inner clickable">
+                        <div class="st-left">
+                            <i class="fa fa-book"></i>
+                            <span>Terms of Use</span>
+                        </div>
+                        <i class="fa fa-chevron-right st-chevron"></i>
+                    </div>
+                    <div class="divider" style="opacity: 0.3;"></div>
+                    <div class="settings-item-inner clickable">
+                        <div class="st-left">
+                            <i class="fa fa-terminal"></i>
+                            <span>Developer</span>
+                        </div>
+                        <i class="fa fa-chevron-right st-chevron"></i>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="footer-content">
-                <div class="footer-branding" style="background-image: url('Assets/Images/onixastralstudio_icon.png');"></div>
-                <div class="footer-policy">
-                    <a href="#" class="tv-focusable" id="terms-link">Terms of Service</a>
-                    <a href="#" class="tv-focusable" id="policy-link">Privacy Policy</a>
+    <!-- INTERNET DIAGNOSTICS VIEW -->
+    <div id="internet-diagnostics-view" style="display: none; background: #000; min-height: 100vh; color: #fff;">
+        <div class="profile-header glass-header">
+            <i class="fa fa-arrow-left" onclick="switchView('app_settings')" style="cursor:pointer;"></i>
+            <span>Check Network</span>
+        </div>
+        <div class="diagnostics-container">
+            <div class="status-orb" id="network-status-orb"></div>
+            <h2 id="network-status-text">Checking...</h2>
+            <p id="network-status-desc">Verifying your connection to OnixPlay+ servers.</p>
+            <button class="glass-btn" onclick="checkNetworkRealtime()">Test Again</button>
+
+            <div class="results-list">
+                <div class="res-item"><i class="fa fa-check-circle ok"></i> Local Connection: <span
+                        id="res-local">OK</span></div>
+                <div class="res-item"><i class="fa fa-check-circle ok"></i> Onix Servers: <span id="res-onix">OK</span>
                 </div>
-                <p>&copy; 2026 OnixPlay+. Developed by Onix Astral Studio. All Rights Reserved.</p>
+                <div class="res-item"><i class="fa fa-check-circle ok"></i> Internet Access: <span
+                        id="res-internet">OK</span></div>
             </div>
-        <!-- Bottom Navbar for Mobile -->
-        <div class="mobile-bottom-nav">
-            <div class="nav-item active glass-shine-effect" id="bot-nav-home">
-                <i class="fa fa-home"></i>
-                <span>Home</span>
+        </div>
+    </div>
+
+    <!-- SPEED TEST VIEW -->
+    <div id="speed-test-view" style="display: none; background: #000; min-height: 100vh; color: #fff;">
+        <div class="profile-header glass-header">
+            <i class="fa fa-arrow-left" onclick="switchView('app_settings')" style="cursor:pointer;"></i>
+            <span>Speed Test</span>
+        </div>
+        <div class="speedtest-container">
+            <div class="speed-gauge-wrap">
+                <div class="speed-gauge">
+                    <div class="gauge-ring"></div>
+                    <div class="speed-value" id="speed-val">0.0</div>
+                    <div class="speed-unit">Mbps</div>
+                </div>
             </div>
-            <div class="nav-item glass-shine-effect" id="bot-nav-news">
-                <i class="fa fa-fire"></i>
-                <span>News</span>
+
+            <!-- Result Card (Hidden until test finishes) -->
+            <div id="test-results-card" class="glass-card premium-results" style="display: none; margin: 0 20px 25px;">
+                <div class="results-grid-premium">
+                    <div class="res-stat">
+                        <span class="res-label">DOWNLOAD</span>
+                        <span class="res-data-wrap"><span id="final-speed-val">0.0</span> <small>Mbps</small></span>
+                    </div>
+                    <div class="res-stat">
+                        <span class="res-label">LATENCY</span>
+                        <span class="res-data-wrap"><span id="res-latency">--</span> <small>ms</small></span>
+                    </div>
+                    <div class="res-stat">
+                        <span class="res-label">JITTER</span>
+                        <span class="res-data-wrap"><span id="res-jitter">--</span> <small>ms</small></span>
+                    </div>
+                </div>
+                <div class="recommendation-box" id="res-recommendation-box">
+                    <span class="rec-label">RECOMMENDED QUALITY</span>
+                    <div id="speed-recommendation" class="rec-badge">Calculating...</div>
+                    <div style="margin-top: 15px;">
+                        <button class="retry-inline-btn" onclick="runPremiumSpeedTest()"><i class="fa fa-redo"></i>
+                            Retry</button>
+                    </div>
+                </div>
             </div>
-            <div class="nav-item glass-shine-effect" id="bot-nav-wallet">
-                <i class="fa fa-wallet"></i>
-                <span>Wallet</span>
+
+            <!-- Usage Categories (Ookla Style) -->
+            <div id="usage-categories" class="usage-categories-row" style="display: none;">
+                <div class="usage-item" data-category="browsing">
+                    <i class="fa fa-mouse-pointer"></i>
+                    <div class="rating-dots"><span class="dot"></span><span class="dot"></span><span
+                            class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                </div>
+                <div class="usage-item" data-category="gaming">
+                    <i class="fa fa-gamepad"></i>
+                    <div class="rating-dots"><span class="dot"></span><span class="dot"></span><span
+                            class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                </div>
+                <div class="usage-item" data-category="streaming">
+                    <i class="fa fa-play-circle"></i>
+                    <div class="rating-dots"><span class="dot"></span><span class="dot"></span><span
+                            class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                </div>
+                <div class="usage-item" data-category="social">
+                    <i class="fa fa-users"></i>
+                    <div class="rating-dots"><span class="dot"></span><span class="dot"></span><span
+                            class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                </div>
             </div>
-            <div class="nav-item glass-shine-effect" id="bot-nav-myop">
-                <img src="Assets/Images/app_logo.jpeg" style="width:24px; height:24px; border-radius:4px; margin-bottom:2px;" alt="My OP">
-                <span>My OP</span>
+
+            <div id="speed-progress-bar" style="margin-bottom: 25px;">
+                <div id="speed-progress-fill"></div>
+            </div>
+
+            <div class="speed-actions-center">
+                <button class="ookla-go-btn" id="start-speed-test-btn" onclick="runPremiumSpeedTest()">
+                    GO
+                </button>
+            </div>
+
+            <!-- Connection Info Footer -->
+            <div class="connection-footer">
+                <div class="isp-info">
+                    <i class="fa fa-network-wired"></i>
+                    <div class="isp-details">
+                        <span id="isp-name">Detecting ISP...</span>
+                        <small id="isp-location">Locating...</small>
+                    </div>
+                </div>
+                <div class="server-info">
+                    <i class="fa fa-globe"></i>
+                    <div class="server-details">
+                        <span>Multi</span>
+                        <small>Auto-Select</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PREMIUM ACCOUNT DASHBOARD (Light Glass) -->
+    <div id="account-dashboard-view" class="account-light-theme" style="display: none; min-height: 100vh;">
+        <div class="profile-header">
+            <i class="fa fa-arrow-left" onclick="goBackFromAccount()" style="cursor:pointer;"></i>
+            <div class="big-logo-container">
+                <img src="Assets/Images/moviepirate_icon.png" class="massive-logo" alt="Logo">
+            </div>
+        </div>
+
+        <div class="settings-scroll-container">
+            <h1 style="font-size: 1.8rem; margin: 20px 16px 10px; font-weight: 700;">Account</h1>
+            <p style="margin: 0 16px 20px; color: var(--ios-text-muted); font-size: 0.9rem;">Manage your subscription,
+                security, and profile controls.</p>
+
+            <h3 class="group-label">Membership details</h3>
+            <div class="glass-card">
+                <div class="settings-item-inner">
+                    <div class="st-left">
+                        <div class="st-title">Current Plan</div>
+                        <div class="st-sub">Free / No Membership</div>
+                    </div>
+                    <button class="glass-btn-inline"
+                        style="background: var(--ios-blue); color: #fff; border:none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.8rem;">Upgrade</button>
+                </div>
+            </div>
+
+            <h3 class="group-label">Security</h3>
+            <div class="glass-card">
+                <div class="settings-item-inner clickable" onclick="switchView('security_settings')">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <i class="fa fa-lock" style="color: var(--ios-blue);"></i>
+                        <div class="st-title">Password</div>
+                    </div>
+                    <i class="fa fa-chevron-right st-chevron"></i>
+                </div>
+                <div class="divider"></div>
+                <div class="settings-item-inner">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <i class="fa fa-envelope" style="color: var(--ios-blue);"></i>
+                        <div>
+                            <div class="st-title">Email</div>
+                            <div id="acc-display-email" class="st-sub">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="group-label">Devices</h3>
+            <div class="glass-card">
+                <div class="settings-item-inner clickable">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <i class="fa fa-laptop" style="color: var(--ios-blue);"></i>
+                        <div class="st-title">Access and devices</div>
+                    </div>
+                    <i class="fa fa-chevron-right st-chevron"></i>
+                </div>
+                <div class="divider"></div>
+                <div class="settings-item-inner clickable">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <i class="fa fa-download" style="color: var(--ios-blue);"></i>
+                        <div class="st-title">Mobile download devices</div>
+                    </div>
+                    <i class="fa fa-chevron-right st-chevron"></i>
+                </div>
+            </div>
+
+            <h3 class="group-label">Profiles</h3>
+            <div class="glass-card">
+                <div class="settings-item-inner clickable" onclick="startVerification('parental_controls')">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <i class="fa fa-user-shield" style="color: var(--ios-blue);"></i>
+                        <div class="st-title">Adjust parental controls</div>
+                    </div>
+                    <i class="fa fa-chevron-right st-chevron"></i>
+                </div>
+                <div class="divider"></div>
+                <div class="settings-item-inner clickable">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <i class="fa fa-eye-slash" style="color: var(--ios-blue);"></i>
+                        <div class="st-title">Privacy and data settings</div>
+                    </div>
+                    <i class="fa fa-chevron-right st-chevron"></i>
+                </div>
+            </div>
+
+            <div style="padding: 20px 16px 40px;">
+                <button class="btn"
+                    style="width: 100%; padding: 15px; background: #fff; color: var(--ios-text); border: 1px solid var(--ios-border); border-radius: 12px; margin-bottom: 12px; font-weight: 600;">Cancel
+                    Membership</button>
+                <button class="btn" onclick="startVerification('delete_account')"
+                    style="width: 100%; padding: 15px; background: #fff; color: var(--ios-red); border: 1px solid var(--ios-border); border-radius: 12px; font-weight: 600;">Delete
+                    Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OTP VERIFICATION SCREEN -->
+    <div id="otp-verification-screen" class="account-light-theme" style="display: none; min-height: 100vh;">
+        <div class="profile-header">
+            <i class="fa fa-arrow-left" onclick="switchView('account_dashboard')" style="cursor:pointer;"></i>
+            <div class="big-logo-container">
+                <img src="Assets/Images/moviepirate_icon.png" class="massive-logo" alt="Logo">
+            </div>
+        </div>
+
+        <div class="settings-scroll-container" style="text-align: center; padding: 40px 20px;">
+            <div id="otp-mode-container">
+                <h2 style="font-weight: 800; margin-bottom: 10px;">Security Verification</h2>
+                <p style="color: var(--ios-text-muted); margin-bottom: 30px;">We've sent a 6-digit code to <br><b
+                        id="otp-target-email" style="color: var(--ios-text);">...</b></p>
+
+                <input type="text" id="otp-input" placeholder="000000" maxlength="6"
+                    style="width: 200px; text-align: center; font-size: 2rem; letter-spacing: 5px; padding: 15px; border: 2px solid var(--ios-border); border-radius: 12px; margin-bottom: 20px; font-weight: 800;">
+                <button class="btn" onclick="confirmOTP()"
+                    style="width: 100%; padding: 15px; background: var(--ios-blue); color: #fff; border-radius: 12px; font-weight: 700;">Verify
+                    Code</button>
+
+                <p style="margin-top: 30px; font-size: 0.9rem; color: var(--ios-text-muted);">
+                    Didn't receive it? <span style="color: var(--ios-blue); cursor: pointer;"
+                        onclick="resendOTP()">Resend</span>
+                </p>
+                <p style="margin-top: 15px; font-size: 0.95rem;">
+                    Or <span style="color: var(--ios-blue); font-weight: 600; cursor: pointer;"
+                        onclick="toggleVerificationMode('password')">Verify using Password instead</span>
+                </p>
+            </div>
+
+            <div id="password-mode-container" style="display: none;">
+                <h2 style="font-weight: 800; margin-bottom: 10px;">Account Password</h2>
+                <p style="color: var(--ios-text-muted); margin-bottom: 30px;">Enter your current password to continue.
+                </p>
+
+                <input type="password" id="verification-password-input" placeholder="Enter password"
+                    style="width: 100%; padding: 15px; border: 2px solid var(--ios-border); border-radius: 12px; margin-bottom: 20px; font-size: 1.1rem;">
+                <button class="btn" onclick="confirmWithPassword()"
+                    style="width: 100%; padding: 15px; background: var(--ios-blue); color: #fff; border-radius: 12px; font-weight: 700;">Verify
+                    Password</button>
+
+                <p style="margin-top: 20px;">
+                    <span style="color: var(--ios-blue); font-weight: 600; cursor: pointer;"
+                        onclick="toggleVerificationMode('otp')">Wait for Gmail OTP instead</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PARENTAL CONTROLS VIEW -->
+    <div id="parental-controls-view" class="account-light-theme"
+        style="display: none; min-height: 100vh; padding-bottom: 80px;">
+        <div class="profile-header">
+            <i class="fa fa-arrow-left" onclick="switchView('account_dashboard')" style="cursor:pointer;"></i>
+            <div class="big-logo-container">
+                <img src="Assets/Images/moviepirate_icon.png" class="massive-logo" alt="Logo">
+            </div>
+        </div>
+        <div class="settings-scroll-container">
+            <div style="padding: 20px 16px;">
+                <h2 style="font-size: 1.3rem; margin-bottom: 5px;">Profile Age Rating</h2>
+                <p style="color: var(--ios-text-muted); font-size: 0.85rem; margin-bottom: 20px;">Only show titles rated
+                    at or below the selected level for this profile.</p>
+
+                <div class="rating-slider-container"
+                    style="display: flex; gap: 15px; align-items: flex-start; justify-content: center; margin: 40px 0;">
+                    <div class="rating-track" id="age-rating-track" style="height: 450px;">
+                        <div class="rating-point" data-rating="18" style="top: 0%"></div>
+                        <div class="rating-point" data-rating="16" style="top: 20%"></div>
+                        <div class="rating-point" data-rating="13" style="top: 40%"></div>
+                        <div class="rating-point" data-rating="10" style="top: 60%"></div>
+                        <div class="rating-point" data-rating="7" style="top: 80%"></div>
+                        <div class="rating-point" data-rating="All" style="top: 100%"></div>
+                        <div class="rating-label" id="current-rating-label">18+</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 40px;">
+                    <h2 style="font-size: 1.3rem; margin-bottom: 5px;">Title Restrictions</h2>
+                    <p style="color: var(--ios-text-muted); font-size: 0.85rem; margin-bottom: 15px;">Block specific
+                        movies or series regardless of age rating.</p>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <input type="text" id="blocked-title-input" placeholder="Enter series or film name"
+                            style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--ios-border);">
+                        <button class="btn" onclick="addTitleRestriction()"
+                            style="background: var(--ios-blue); color: #fff; padding: 0 20px; border-radius: 10px; font-weight: 600;">Add</button>
+                    </div>
+
+                    <div id="blocked-titles-list" class="blocked-titles-list">
+                        <!-- Blocked items here -->
+                    </div>
+                </div>
+
+                <!-- Save Button at the Bottom of Content -->
+                <div style="margin-top: 30px; padding-bottom: 40px;">
+                    <button class="ios-save-btn" onclick="saveParentalSettings()">Save Controls</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECURITY SETTINGS VIEW -->
+    <div id="security-settings-view" class="account-light-theme" style="display: none; min-height: 100vh;">
+        <div class="profile-header">
+            <i class="fa fa-arrow-left" onclick="switchView('account_dashboard')" style="cursor:pointer;"></i>
+            <div class="big-logo-container">
+                <img src="Assets/Images/moviepirate_icon.png" class="massive-logo" alt="Logo">
+            </div>
+        </div>
+        <div style="padding: 20px 16px;">
+            <h2 style="font-size: 1.3rem; margin-bottom: 20px;">Change Password</h2>
+            <div class="glass-card">
+                <div style="padding: 15px;">
+                    <label
+                        style="display:block; font-size: 0.8rem; color: var(--ios-text-muted); margin-bottom: 5px;">New
+                        Password</label>
+                    <input type="password" id="new-password-input" placeholder="Min. 8 characters"
+                        style="width: 100%; padding: 10px; border: 1px solid var(--ios-border); border-radius: 8px; margin-bottom: 15px;">
+                    <label
+                        style="display:block; font-size: 0.8rem; color: var(--ios-text-muted); margin-bottom: 5px;">Confirm
+                        New Password</label>
+                    <input type="password" id="confirm-password-input" placeholder="Repeat password"
+                        style="width: 100%; padding: 10px; border: 1px solid var(--ios-border); border-radius: 8px;">
+                </div>
+            </div>
+            <button class="btn" onclick="updateUserPassword()"
+                style="width: 100%; padding: 15px; background: var(--ios-blue); color: #fff; border-radius: 12px; font-weight: 700; margin-top: 20px;">Save
+                New Password</button>
+        </div>
+    </div>
+
+    <!-- PREMIUM HELP VIEW (iPhone Liquid Glass) -->
+    <div id="help-view" class="account-light-theme help-light-theme"
+        style="display: none; min-height: 100vh; padding-bottom: 50px;">
+        <div class="profile-header help-header">
+            <i class="fa fa-arrow-left" onclick="switchView('my_op')"
+                style="cursor:pointer; color: #fff !important;"></i>
+            <div class="header-logo-centered">
+                <img src="Assets/Images/moviepirate_icon.png" alt="OnixPlay+ Logo" class="help-nav-logo">
+            </div>
+        </div>
+
+        <div class="help-content-container">
+            <h1 class="help-main-title">Find help online</h1>
+
+            <div class="help-list-glass">
+                <div class="help-item-row" onclick="showToast('Help Centre coming soon!')">
+                    <div class="h-left"><i class="fa fa-headset h-icon"></i> <span>Help Centre</span></div>
+                    <i class="fa fa-external-link-alt h-link-icon"></i>
+                </div>
+                <div class="help-divider"></div>
+                <div class="help-item-row" onclick="showToast('Request a title feature coming soon!')">
+                    <div class="h-left"><i class="fa fa-folder-plus h-icon"></i> <span>Request a title</span></div>
+                    <i class="fa fa-external-link-alt h-link-icon"></i>
+                </div>
+                <div class="help-divider"></div>
+                <div class="help-item-row" onclick="showToast('Fixing connection check...')">
+                    <div class="h-left"><i class="fa fa-wrench h-icon"></i> <span>Fix a connection issue</span></div>
+                    <i class="fa fa-external-link-alt h-link-icon"></i>
+                </div>
+                <div class="help-divider"></div>
+                <div class="help-item-row" onclick="showToast('Loading Privacy Statement...')">
+                    <div class="h-left"><i class="fa fa-shield-halved h-icon"></i> <span>Privacy Statement</span></div>
+                    <i class="fa fa-external-link-alt h-link-icon"></i>
+                </div>
+                <div class="help-divider"></div>
+                <div class="help-item-row" onclick="showToast('Loading Terms of Use...')">
+                    <div class="h-left"><i class="fa fa-file-lines h-icon"></i> <span>Terms of Use</span></div>
+                    <i class="fa fa-external-link-alt h-link-icon"></i>
+                </div>
+            </div>
+
+            <div class="contact-us-section">
+                <h2 class="contact-title">Contact us</h2>
+                <p class="contact-subtitle">Get in touch with our team for personalized support via email.</p>
+
+                <div class="contact-actions-row">
+                    <a href="mailto:onicplayplus@gmail.com" class="help-chat-btn">
+                        <i class="fa fa-comment-dots"></i> Chat
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navbar for Mobile -->
+    <div class="mobile-bottom-nav">
+        <div class="nav-item active" id="bot-nav-home">
+            <i class="fa fa-home"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-item" id="bot-nav-news">
+            <i class="fa fa-bolt-lightning"></i>
+            <span>Spotlight</span>
+        </div>
+        <div class="nav-item" id="bot-nav-wallet">
+            <i class="fa fa-wallet"></i>
+            <span>Wallet</span>
+        </div>
+        <div class="nav-item" id="bot-nav-myop">
+            <div class="bot-nav-avatar-wrapper" id="bot-avatar-container">
+                <img src="Assets/Images/app_logo.jpeg" id="bot-nav-avatar-img"
+                    style="width:24px; height:24px; border-radius:3px; object-fit:cover;" alt="My OP">
+            </div>
+            <span>My OP</span>
+        </div>
+    </div>
+    </div>
+
+    <!-- CUSTOM GLASS DIALOG -->
+    <div id="custom-glass-dialog" class="dialog-overlay" style="display: none;">
+        <div class="glass-dialog-box">
+            <span class="dialog-close" onclick="closeGlassDialog()">&times;</span>
+            <div class="dialog-content">
+                <i class="fa fa-check-circle"
+                    style="font-size: 3rem; color: #34c759; margin-bottom: 20px; display: block;"></i>
+                <h3 id="dialog-title" style="margin-bottom: 10px; font-weight: 800;">Settings Saved</h3>
+                <p id="dialog-message" style="color: var(--ios-text-muted); line-height: 1.5; font-size: 0.95rem;">Your
+                    parental control preferences have been updated successfully.</p>
+                <button class="btn" onclick="closeGlassDialog()"
+                    style="margin-top: 25px; width: 100%; border-radius: 12px; background: var(--ios-blue); color: #fff; font-weight: 700; padding: 12px;">Done</button>
             </div>
         </div>
     </div>
@@ -550,45 +1317,46 @@
 
     <!-- PWA: Service Worker + Push Notification Registration -->
     <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', async () => {
-            try {
-                const reg = await navigator.serviceWorker.register('./sw.js');
-                console.log('✅ OnixPlay+ Service Worker registered:', reg.scope);
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const reg = await navigator.serviceWorker.register('./sw.js');
+                    console.log('✅ OnixPlay+ Service Worker registered:', reg.scope);
 
-                // Request push notification permission (silently, after a delay)
-                setTimeout(async () => {
-                    if ('Notification' in window && Notification.permission === 'default') {
-                        const permission = await Notification.requestPermission();
-                        if (permission === 'granted') {
-                            console.log('🔔 Notification permission granted');
+                    // Request push notification permission (silently, after a delay)
+                    setTimeout(async () => {
+                        if ('Notification' in window && Notification.permission === 'default') {
+                            const permission = await Notification.requestPermission();
+                            if (permission === 'granted') {
+                                console.log('🔔 Notification permission granted');
 
-                            // Show a welcome notification
-                            if (reg.active) {
-                                reg.showNotification('OnixPlay+ 🎬', {
-                                    body: 'Notifications are ON! We\'ll tell you when new movies drop.',
-                                    icon: './Assets/Images/app_logo.jpeg',
-                                    badge: './Assets/Images/app_logo.jpeg',
-                                    tag: 'welcome',
-                                    vibrate: [200, 100, 200]
-                                });
+                                // Show a welcome notification
+                                if (reg.active) {
+                                    reg.showNotification('OnixPlay+ 🎬', {
+                                        body: 'Notifications are ON! We\'ll tell you when new movies drop.',
+                                        icon: './Assets/Images/app_logo.jpeg',
+                                        badge: './Assets/Images/app_logo.jpeg',
+                                        tag: 'welcome',
+                                        vibrate: [200, 100, 200]
+                                    });
+                                }
                             }
                         }
-                    }
-                }, 5000); // Ask after 5 seconds — not immediately on load
+                    }, 5000); // Ask after 5 seconds — not immediately on load
 
-            } catch (err) {
-                console.warn('Service Worker registration failed:', err);
-            }
-        });
+                } catch (err) {
+                    console.warn('Service Worker registration failed:', err);
+                }
+            });
 
-        // Handle app update: new SW available → prompt user to refresh
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (confirm('🔄 OnixPlay+ has been updated! Reload for the latest version?')) {
-                window.location.reload();
-            }
-        });
-    }
+            // Handle app update: new SW available → prompt user to refresh
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (confirm('🔄 OnixPlay+ has been updated! Reload for the latest version?')) {
+                    window.location.reload();
+                }
+            });
+        }
     </script>
 </body>
+
 </html>
