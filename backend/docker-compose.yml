@@ -1,0 +1,26 @@
+version: "3"
+services:
+  # Prowlarr - Indexer Aggregator
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./config/prowlarr:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+
+  # FlareSolverr - Bypass Cloudflare (Optional but recommended)
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - TIMEZONE=Etc/UTC
+    ports:
+      - 8191:8191
+    restart: unless-stopped
